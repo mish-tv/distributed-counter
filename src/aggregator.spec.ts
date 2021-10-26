@@ -38,4 +38,33 @@ describe("aggregate", () => {
       expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({ key, data: { foo: "bar", x: 9, y: 18, z: 4 } });
     });
   });
+
+  context("If the distributed counter does not exist", () => {
+    beforeEach(() => {
+      mocks.datastoreMock.queryMock.run.mockReturnValue([[]]);
+    });
+
+    it("doesn't do anything.", async () => {
+      const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
+      await aggregate(key);
+
+      expect(mocks.datastoreMock.transactionMock.get).not.toBeCalled();
+      expect(mocks.datastoreMock.transactionMock.upsert).not.toBeCalled();
+      expect(mocks.datastoreMock.transactionMock.commit).not.toBeCalled();
+    });
+  });
+
+  context("If no changes were made to the properties", () => {
+    beforeEach(() => {
+      mocks.datastoreMock.transactionMock.get.mockResolvedValue([{ foo: "bar", x: 9, y: 18, z: 4 }]);
+    });
+
+    it("does not do upsert", async () => {
+      const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
+      await aggregate(key);
+
+      expect(mocks.datastoreMock.transactionMock.get).toBeCalledWith(key);
+      expect(mocks.datastoreMock.transactionMock.upsert).not.toBeCalled();
+    });
+  });
 });
