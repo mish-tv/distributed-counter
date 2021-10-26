@@ -16,8 +16,8 @@ describe("increment", () => {
     increment = createIncrementor(
       url,
       (key, client) => client.queuePath(projectId, location, `distributed-counter-${key.kind}`),
-      (key) => (key.kind === "Counter" ? 1000 : 100),
-      (key) => (key.kind === "Counter" ? 10_000 : 60_000),
+      1000,
+      10_000,
       "Distributed",
       "Meta",
       mocks,
@@ -63,6 +63,30 @@ describe("increment", () => {
         name: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/),
         scheduleTime: { seconds: now / 1000 + 10 },
       },
+    });
+  });
+
+  context("If a distributed counter already exists", () => {
+    beforeEach(() => {
+      mocks.datastoreMock.transactionMock.get.mockImplementation((key) =>
+        key.kind === "Distributed" ? [{ properties: { dummyValue: 101, dummy2: "foo" } }] : [undefined],
+      );
+    });
+
+    it("increments and stores the value of the counter that existed.", async () => {
+      const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
+      await increment(key, "dummyValue");
+
+      expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
+        data: {
+          properties: { dummyValue: 102, dummy2: "foo" },
+        },
+        excludeFromIndexes: ["properties"],
+        key: expect.objectContaining({
+          kind: "Distributed",
+          name: expect.stringMatching(/^Counter\.dummy-id\.[0-9a-f]{8}$/),
+        }),
+      });
     });
   });
 });

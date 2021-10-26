@@ -42,8 +42,6 @@ export const createIncrementor = (
   metaKind = "__distributed_counter_meta__",
   dependencies: Dependencies = defaultDependencies(),
 ) => {
-  if (delay > marginDuration + 1000) throw new Error(`delay needs to be greater than ${marginDuration + 1000}.`);
-
   const { datastore, tasks } = dependencies;
   const getQueuePath = typeof queuePath === "string" ? () => queuePath : queuePath;
   const getDistributionNumber = typeof distributionNumber === "number" ? () => distributionNumber : distributionNumber;
