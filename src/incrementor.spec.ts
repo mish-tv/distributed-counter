@@ -56,11 +56,13 @@ describe("increment", () => {
       parent: "projects/dummy-project-id/locations/us-east4/queues/distributed-counter-Counter",
       task: {
         httpRequest: {
-          body: '{"key":{"path":["Counter","dummy-id"]}}',
+          body: Buffer.from('{"key":{"path":["Counter","dummy-id"]}}'),
           httpMethod: "POST",
           url: "http://aggregate.example.com",
         },
-        name: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/),
+        name: expect.stringMatching(
+          /^projects\/dummy-project-id\/locations\/us-east4\/queues\/distributed-counter-Counter\/tasks\/[0-9a-f-]{36}$/,
+        ),
         scheduleTime: { seconds: now / 1000 + 10 },
       },
     });
@@ -95,7 +97,9 @@ describe("increment", () => {
       expect.objectContaining({
         task: expect.objectContaining({
           httpRequest: expect.objectContaining({
-            body: '{"key":{"namespace":"dummy-namespace","path":["Counter",{"type":"DatastoreInt","value":"123"}]}}',
+            body: Buffer.from(
+              '{"key":{"namespace":"dummy-namespace","path":["Counter",{"type":"DatastoreInt","value":"123"}]}}',
+            ),
           }),
         }),
       }),
