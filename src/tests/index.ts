@@ -9,10 +9,17 @@ export const createMocks = () => {
     get: jest.fn(),
     upsert: jest.fn(),
   };
+  const queryMock = {
+    filter: jest.fn().mockReturnThis(),
+    select: jest.fn().mockReturnThis(),
+    run: jest.fn(),
+  };
   const datastoreMock = {
     transactionMock,
+    queryMock,
     key: jest.fn().mockImplementation((arg) => new Datastore().key(arg)),
     transaction: jest.fn().mockReturnValue(transactionMock),
+    createQuery: jest.fn().mockReturnValue(queryMock),
   };
   const tasksMock = {
     queuePath: jest
