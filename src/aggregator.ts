@@ -11,7 +11,7 @@ const defaultDependencies = (): Dependencies => ({
 });
 
 export const createAggregator = (
-  distributedCounterKind = "__distributed_counter_distributed__",
+  distributedCounterKind = "distributed_counter",
   dependencies: Dependencies = defaultDependencies(),
 ) => {
   const { datastore } = dependencies;

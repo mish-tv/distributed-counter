@@ -38,8 +38,8 @@ export const createIncrementor = (
   queuePath: QueuePath,
   distributionNumber: DistributionNumber = 1000,
   delay: Delay = 10_000,
-  distributedCounterKind = "__distributed_counter_distributed__",
-  metaKind = "__distributed_counter_meta__",
+  distributedCounterKind = "distributed_counter",
+  metaKind = "distributed_counter_meta",
   dependencies: Dependencies = defaultDependencies(),
 ) => {
   const { datastore, tasks } = dependencies;
@@ -72,12 +72,12 @@ export const createIncrementor = (
         transaction.upsert({ key: metaKey, data });
 
         const task: Task = {
-          name: randomUUID(),
+          name: `${parent}/tasks/${randomUUID()}`,
           scheduleTime: { seconds: scheduleTime / 1000 },
           httpRequest: {
             httpMethod: "POST",
             url,
-            body: JSON.stringify({ key: key.serialized }),
+            body: Buffer.from(JSON.stringify({ key: key.serialized })),
           },
         };
         await tasks.createTask({ parent, task });
