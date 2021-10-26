@@ -31,7 +31,7 @@ The deployment to CloudRun is complete, note the URL to request.
 Apply the URL you have note to the constant named url in the following sample code.
 
 ```sh
-TAG=v0.0.3
+TAG=v0.0.4
 IMAGE=us-east4-docker.pkg.dev/${YOUR_PROJECT_ID}/distributed-counter/aggregate-server:${TAG}
 
 docker pull malt03/aggregate-server:${TAG}
