@@ -26,12 +26,14 @@ export const metaKeyName = (key: Key) => {
 
 export type DistributedCounter = { properties: Record<string, number>; key: Key };
 
-export const hashKeys = (() => {
+export const createHashKeys = () => {
   const result: string[] = [];
   for (let i = 0; i < 1000; i++) {
-    const data = new Uint16Array([i]);
-    result.push(createHash("sha1").update(data).digest("base64").slice(0, 6));
+    const data = new Uint32Array([i]);
+    result.push(createHash("sha1").update(data).digest("hex").slice(0, 8));
   }
 
   return result;
-})();
+};
+
+export const hashKeys = createHashKeys();
