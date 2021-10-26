@@ -1,1 +1,2 @@
-export const dummy = () => 1;
+export { createAggregator } from "./aggregator";
+export { createIncrementer } from "./incrementor";
