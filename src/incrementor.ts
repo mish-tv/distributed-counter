@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { Datastore, Key } from "@google-cloud/datastore";
 import { CloudTasksClient, protos as tasksProtos } from "@google-cloud/tasks";
 
-import { DistributedCounter, hashKeys, runInTransaction } from "./shared";
+import { DistributedCounter, hashKeys, keyToString, runInTransaction } from "./shared";
 
 const marginDuration = 5000;
 
@@ -16,15 +16,6 @@ type Dependencies = {
 
 type Meta = { scheduleTime: number };
 type Task = tasksProtos.google.cloud.tasks.v2.ITask;
-
-const keyToString = (key: Key) => {
-  const serialized = key.serialized;
-
-  return [
-    ...(serialized.namespace == undefined ? [] : [serialized.namespace]),
-    ...serialized.path.map((n) => (typeof n === "string" ? n : n.toString())),
-  ].join(".");
-};
 
 const defaultDependencies = (): Dependencies => ({
   datastore: new Datastore(),
@@ -62,7 +53,7 @@ export const createIncrementor = (
         transaction.get(distributedCounterKey),
         transaction.get(metaKey),
       ]);
-      const updatedDistributedCounter = distributedCounter ?? { properties: {}, key };
+      const updatedDistributedCounter = distributedCounter ?? { properties: {}, key: keyText };
       updatedDistributedCounter.properties[property] = (updatedDistributedCounter.properties[property] ?? 0) + number;
 
       const entity = { key: distributedCounterKey, data: updatedDistributedCounter, excludeFromIndexes: ["properties"] };

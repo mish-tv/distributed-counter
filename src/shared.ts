@@ -15,7 +15,7 @@ export const runInTransaction = async <T>(handler: (transaction: Transaction) =>
   }
 };
 
-export type DistributedCounter = { properties: Record<string, number>; key: Key };
+export type DistributedCounter = { properties: Record<string, number>; key: string };
 
 export const createHashKeys = () => {
   const result: string[] = [];
@@ -28,3 +28,12 @@ export const createHashKeys = () => {
 };
 
 export const hashKeys = createHashKeys();
+
+export const keyToString = (key: Key) => {
+  const serialized = key.serialized;
+
+  return [
+    ...(serialized.namespace == undefined ? [] : [serialized.namespace]),
+    ...serialized.path.map((n) => (typeof n === "string" ? n : n.toString())),
+  ].join(".");
+};

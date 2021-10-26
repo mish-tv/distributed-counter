@@ -1,6 +1,6 @@
 import { Datastore, Key } from "@google-cloud/datastore";
 
-import { DistributedCounter, runInTransaction } from "./shared";
+import { DistributedCounter, keyToString, runInTransaction } from "./shared";
 
 type Dependencies = {
   datastore: Datastore;
@@ -17,9 +17,10 @@ export const createAggregator = (
   const { datastore } = dependencies;
 
   return async (key: Key) => {
+    const keyText = keyToString(key);
     const [distributedCounters]: [Pick<DistributedCounter, "properties">[], any] = await datastore
       .createQuery(distributedCounterKind)
-      .filter("key", key)
+      .filter("key", keyText)
       .run();
 
     const aggregated = new Map<string, number>();
