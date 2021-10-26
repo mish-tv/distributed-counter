@@ -19,6 +19,10 @@ describe("aggregate", () => {
     const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
     await aggregate(key);
 
+    expect(mocks.datastoreMock.createQuery).toBeCalledWith("Distributed");
+    expect(mocks.datastoreMock.queryMock.filter).toBeCalledWith("key", key);
+    expect(mocks.datastoreMock.queryMock.select).toBeCalledWith("properties");
+    expect(mocks.datastoreMock.transactionMock.get).toBeCalledWith(key);
     expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({ key, data: { x: 9, y: 18, z: 4 } });
   });
 });
