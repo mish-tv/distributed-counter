@@ -67,7 +67,7 @@ export const createIncrementor = (
       const entity = { key: distributedCounterKey, data: updatedDistributedCounter, excludeFromIndexes: ["properties"] };
       transaction.upsert(entity);
 
-      if (meta == undefined || meta.scheduleTime > scheduleTime - marginDuration) {
+      if (meta == undefined || meta.scheduleTime < scheduleTime - marginDuration) {
         const data: Meta = { scheduleTime };
         transaction.upsert({ key: metaKey, data });
 

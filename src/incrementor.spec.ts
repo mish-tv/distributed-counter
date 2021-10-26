@@ -114,30 +114,43 @@ describe("increment", () => {
     });
   });
 
-  context("If the aggregation has already been reserved", () => {
+  context("If the aggregate has already been reserved", () => {
     beforeEach(() => {
       mocks.datastoreMock.transactionMock.get.mockImplementation((key) =>
         key.kind === "Meta" ? [{ scheduleTime: now + 5000 }] : [undefined],
       );
     });
 
-    it("updates the value of the distributed counter, but does not reserve aggregation.", async () => {
+    it("updates the value of the distributed counter, but does not reserve aggregate.", async () => {
       const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
       await increment(key, "dummyValue", 2);
 
       expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledTimes(1);
-      expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
-        data: {
-          key: expect.objectContaining({ kind: "Counter", name: "dummy-id" }),
-          properties: { dummyValue: 2 },
-        },
-        excludeFromIndexes: ["properties"],
-        key: expect.objectContaining({
-          kind: "Distributed",
-          name: expect.stringMatching(/^Counter\.dummy-id\.[0-9a-f]{8}$/),
+      expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith(
+        expect.objectContaining({
+          key: expect.objectContaining({
+            kind: "Distributed",
+            name: expect.stringMatching(/^Counter\.dummy-id\.[0-9a-f]{8}$/),
+          }),
         }),
-      });
+      );
       expect(mocks.tasksMock.createTask).not.toBeCalled();
+    });
+  });
+
+  context("If the aggregate is reserved but will be executed soon", () => {
+    beforeEach(() => {
+      mocks.datastoreMock.transactionMock.get.mockImplementation((key) =>
+        key.kind === "Meta" ? [{ scheduleTime: now + 4999 }] : [undefined],
+      );
+    });
+
+    it("makes an reservation for the aggregate.", async () => {
+      const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
+      await increment(key, "dummyValue", 2);
+
+      expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledTimes(2);
+      expect(mocks.tasksMock.createTask).toBeCalled();
     });
   });
 });
