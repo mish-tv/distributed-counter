@@ -21,6 +21,21 @@ npm install --save @mish-tv/distributed-counter
 - Create a Queue with an arbitrary name in CloudTasks.  
 In the following example, you will need a queue named distributed-counter-Counter.
 
+### Deploy aggregate server
+Deploy a server application to CloudRun.  
+You can use the [image](https://hub.docker.com/repository/docker/malt03/aggregate-server) I have created.
+
+```sh
+TAG=v0.0.1
+IMAGE=us-east4-docker.pkg.dev/${YOUR_PROJECT_ID}/distributed-counter/aggregate-server:${TAG}
+
+docker pull malt03/aggregate-server:${TAG}
+docker tag malt03/aggregate-server:${TAG} ${IMAGE}
+docker push ${IMAGE}
+
+gcloud run deploy aggregate-distributed-counter --image ${IMAGE} --platform managed --region us-east4
+```
+
 ### Implementation
 ```typescript
 import { Datastore } from "@google-cloud/datastore";
