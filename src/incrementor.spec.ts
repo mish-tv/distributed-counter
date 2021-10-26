@@ -40,7 +40,7 @@ describe("increment", () => {
     );
     expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
       data: {
-        key: expect.objectContaining({ kind: "Counter", name: "dummy-id" }),
+        key: "Counter.dummy-id",
         properties: { dummyValue: 2 },
       },
       excludeFromIndexes: ["properties"],
@@ -84,9 +84,7 @@ describe("increment", () => {
     );
     expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          key: expect.objectContaining({ kind: "Counter", id: 123, namespace: "dummy-namespace" }),
-        }),
+        data: expect.objectContaining({ key: "dummy-namespace.Counter.123" }),
         key: expect.objectContaining({
           name: expect.stringMatching(/^dummy-namespace\.Counter\.123\.[0-9a-f]{8}$/),
         }),
