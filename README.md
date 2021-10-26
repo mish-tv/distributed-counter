@@ -25,6 +25,9 @@ In the following example, you will need a queue named distributed-counter-Counte
 Deploy a server application to CloudRun.  
 You can use the [image](https://hub.docker.com/repository/docker/malt03/aggregate-server) I have created.
 
+The deployment to CloudRun is complete, note the URL to request.  
+Apply the URL you have note to the constant named url in the following sample code.
+
 ```sh
 TAG=v0.0.1
 IMAGE=us-east4-docker.pkg.dev/${YOUR_PROJECT_ID}/distributed-counter/aggregate-server:${TAG}
@@ -44,7 +47,7 @@ import { createIncrementor } from "@mish-tv/distributed-counter";
 const datastore = new Datastore();
 const projectId = "";
 const location = "us-east4";
-const url = "https://aggregate-distributed-counter-example-uk.a.run.app";
+// const url = `https://aggregate-distributed-counter-${dummy}-uk.a.run.app`;
 const increment = createIncrementor(
   url,
   (key, client) => client.queuePath(projectId, location, `distributed-counter-${key.kind}`),
