@@ -64,7 +64,8 @@ export const createIncrementor = (
         transaction.get(metaKey),
       ]);
       const updatedDistributedCounter = distributedCounter ?? { properties: {}, key };
-      updatedDistributedCounter.properties[property] += number;
+      updatedDistributedCounter.properties[property] = (updatedDistributedCounter.properties[property] ?? 0) + number;
+
       const entity = { key: distributedCounterKey, data: updatedDistributedCounter, excludeFromIndexes: ["properties"] };
       transaction.upsert(entity);
 

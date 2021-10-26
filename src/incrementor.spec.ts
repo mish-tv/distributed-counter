@@ -1,5 +1,3 @@
-import { Key } from "@google-cloud/datastore";
-
 import { createIncrementor } from "./incrementor";
 import { createMocks } from "./tests";
 
@@ -10,6 +8,8 @@ describe("increment", () => {
 
   let mocks: ReturnType<typeof createMocks>;
   let increment: ReturnType<typeof createIncrementor>;
+
+  const now = 1_000_000_000_000;
 
   beforeEach(() => {
     mocks = createMocks();
@@ -23,37 +23,45 @@ describe("increment", () => {
       mocks,
     );
 
+    jest.spyOn(Date, "now").mockReturnValue(now);
     mocks.datastoreMock.transactionMock.get.mockResolvedValue([undefined]);
   });
 
-  it("is dummy", async () => {
+  it("increments the value to a distributed counter and reserves the aggregate.", async () => {
     const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
-    await increment(key, "value", 2);
+    await increment(key, "dummyValue", 2);
 
     expect(mocks.datastoreMock.transactionMock.get).toBeCalledWith(
-      expect.objectContaining({ kind: "Distributed", name: expect.stringMatching(/^Counter\.dummy-id\.[a-zA-Z0-9]{6}$/) }),
+      expect.objectContaining({ kind: "Distributed", name: expect.stringMatching(/^Counter\.dummy-id\.[0-9a-f]{8}$/) }),
     );
     expect(mocks.datastoreMock.transactionMock.get).toBeCalledWith(
       expect.objectContaining({ kind: "Meta", name: "Counter.dummy-id" }),
     );
     expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
       data: {
-        key: {
-          kind: "Counter",
-          name: "dummy-id",
-          namespace: undefined,
-          path: ["Counter", "dummy-id"],
-        },
-        properties: {
-          value: NaN,
-        },
+        key: expect.objectContaining({ kind: "Counter", name: "dummy-id" }),
+        properties: { dummyValue: 2 },
       },
       excludeFromIndexes: ["properties"],
-      key: {
+      key: expect.objectContaining({
         kind: "Distributed",
-        name: "Counter.dummy-id.s6RGMw",
-        namespace: undefined,
-        path: ["Distributed", "Counter.dummy-id.s6RGMw"],
+        name: expect.stringMatching(/^Counter\.dummy-id\.[0-9a-f]{8}$/),
+      }),
+    });
+    expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
+      data: expect.objectContaining({ scheduleTime: now + 10_000 }),
+      key: expect.objectContaining({ kind: "Meta", name: "Counter.dummy-id" }),
+    });
+    expect(mocks.tasksMock.createTask).toBeCalledWith({
+      parent: "projects/dummy-project-id/locations/us-east4/queues/distributed-counter-Counter",
+      task: {
+        httpRequest: {
+          body: '{"key":{"path":["Counter","dummy-id"]}}',
+          httpMethod: "POST",
+          url: "http://aggregate.example.com",
+        },
+        name: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/),
+        scheduleTime: { seconds: now / 1000 + 10 },
       },
     });
   });
