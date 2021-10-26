@@ -7,10 +7,36 @@
 <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/github/license/mish-tv/distributed-counter.svg?style=flat" alt="license"></a>
 </div>
 
-<h4 align="center">`@mish-tv/distributed-counter` is ${description}</h4>
+<h4 align="center">`@mish-tv/distributed-counter is a library for creating distributed counters using CloudDatastore, CloudTasks, and CloudRun.</h4>
 
 
 ## Installation
 ```
 npm install --save @mish-tv/distributed-counter
+```
+
+## Usage
+### Preparation
+- Enable Datastore / CloudRun / CloudTasks.
+- Create a Queue with an arbitrary name in CloudTasks.  
+In the following example, you will need a queue named distributed-counter-Counter.
+
+### Implementation
+```typescript
+import { Datastore } from "@google-cloud/datastore";
+import { createIncrementor } from "@mish-tv/distributed-counter";
+
+const datastore = new Datastore();
+const projectId = "";
+const location = "us-east4";
+const url = "https://aggregate-distributed-counter-example-uk.a.run.app";
+const increment = createIncrementor(
+  url,
+  (key, client) => client.queuePath(projectId, location, `distributed-counter-${key.kind}`),
+);
+
+export const incrementCounter = async (id: string, value: number) => {
+  const key = datastore.key(["Counter", id]);
+  await increment(key, "value", value);
+};
 ```

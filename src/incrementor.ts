@@ -33,12 +33,12 @@ const defaultDependencies = (): Dependencies => ({
 
 const getDistributionKey = (distributionNumber: number) => hashKeys[Math.floor(Math.random() * distributionNumber)];
 
-export const createIncrementer = (
+export const createIncrementor = (
   url: string,
   queuePath: QueuePath,
-  distributionNumber: DistributionNumber,
+  distributionNumber: DistributionNumber = 1000,
   delay: Delay = 10_000,
-  distributedKind = "__distributed_counter_distributed__",
+  distributedCounterKind = "__distributed_counter_distributed__",
   metaKind = "__distributed_counter_meta__",
   dependencies: Dependencies = defaultDependencies(),
 ) => {
@@ -56,7 +56,7 @@ export const createIncrementer = (
     const keyText = keyToString(key);
     const metaKey = datastore.key([metaKind, keyText]);
 
-    const distributedCounterKey = datastore.key([distributedKind, `${keyText}.${wrapedGetDistributionKey(key)}`]);
+    const distributedCounterKey = datastore.key([distributedCounterKind, `${keyText}.${wrapedGetDistributionKey(key)}`]);
 
     await runInTransaction(async (transaction) => {
       const [[distributedCounter], [meta]]: [[Nullable<DistributedCounter>], [Nullable<Meta>]] = await Promise.all([

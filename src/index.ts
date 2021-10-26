@@ -1,2 +1,2 @@
 export { createAggregator } from "./aggregator";
-export { createIncrementer } from "./incrementor";
+export { createIncrementor } from "./incrementor";

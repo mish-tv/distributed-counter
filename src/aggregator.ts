@@ -11,14 +11,14 @@ const defaultDependencies = (): Dependencies => ({
 });
 
 export const createAggregator = (
-  distributedKind = "__distributed_counter_distributed__",
+  distributedCounterKind = "__distributed_counter_distributed__",
   dependencies: Dependencies = defaultDependencies(),
 ) => {
   const { datastore } = dependencies;
 
   return async (key: Key) => {
     const [distributedCounters]: [Pick<DistributedCounter, "properties">[], any] = await datastore
-      .createQuery(distributedKind)
+      .createQuery(distributedCounterKind)
       .filter("key", key)
       .select("properties")
       .run();
