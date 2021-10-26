@@ -15,6 +15,7 @@ describe("increment", () => {
     mocks = createMocks();
     increment = createIncrementor(
       url,
+      "sa@example.com",
       (key, client) => client.queuePath(projectId, location, `distributed-counter-${key.kind}`),
       1000,
       10_000,
@@ -59,6 +60,7 @@ describe("increment", () => {
           body: Buffer.from('{"key":{"path":["Counter","dummy-id"]}}'),
           httpMethod: "POST",
           url: "http://aggregate.example.com",
+          oidcToken: { serviceAccountEmail: "sa@example.com" },
         },
         name: expect.stringMatching(
           /^projects\/dummy-project-id\/locations\/us-east4\/queues\/distributed-counter-Counter\/tasks\/[0-9a-f-]{36}$/,

@@ -20,6 +20,8 @@ npm install --save @mish-tv/distributed-counter
 - Enable Datastore / CloudRun / CloudTasks.
 - Create a Queue with an arbitrary name in CloudTasks.  
 In the following example, you will need a queue named distributed-counter-Counter.
+- Create a service account to run CloudRun from CloudTasks.  
+Please refer to [this document](https://cloud.google.com/tasks/docs/creating-http-target-tasks#sa).
 
 ### Deploy aggregate server
 Deploy a server application to CloudRun.  
@@ -48,8 +50,10 @@ const datastore = new Datastore();
 const projectId = "";
 const location = "us-east4";
 // const url = `https://aggregate-distributed-counter-${dummy}-uk.a.run.app`;
+// const serviceAccount = `cloud-tasks@${projectId}.iam.gserviceaccount.com`;
 const increment = createIncrementor(
   url,
+  serviceAccount,
   (key, client) => client.queuePath(projectId, location, `distributed-counter-${key.kind}`),
 );
 

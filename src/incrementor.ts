@@ -35,6 +35,7 @@ const getDistributionKey = (distributionNumber: number) => hashKeys[Math.floor(M
 
 export const createIncrementor = (
   url: string,
+  serviceAccount: string,
   queuePath: QueuePath,
   distributionNumber: DistributionNumber = 1000,
   delay: Delay = 10_000,
@@ -78,6 +79,7 @@ export const createIncrementor = (
             httpMethod: "POST",
             url,
             body: Buffer.from(JSON.stringify({ key: key.serialized })),
+            oidcToken: { serviceAccountEmail: serviceAccount },
           },
         };
         await tasks.createTask({ parent, task });

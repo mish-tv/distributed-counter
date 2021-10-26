@@ -20,7 +20,6 @@ export const createAggregator = (
     const [distributedCounters]: [Pick<DistributedCounter, "properties">[], any] = await datastore
       .createQuery(distributedCounterKind)
       .filter("key", key)
-      .select("properties")
       .run();
 
     const aggregated = new Map<string, number>();
