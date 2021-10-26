@@ -89,4 +89,28 @@ describe("increment", () => {
       });
     });
   });
+
+  context("If a distributed counter already exists, but the property does not exist", () => {
+    beforeEach(() => {
+      mocks.datastoreMock.transactionMock.get.mockImplementation((key) =>
+        key.kind === "Distributed" ? [{ properties: { dummy2: "foo" } }] : [undefined],
+      );
+    });
+
+    it("adds properties to the distributed counter and stores it.", async () => {
+      const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
+      await increment(key, "dummyValue", 3);
+
+      expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
+        data: {
+          properties: { dummyValue: 3, dummy2: "foo" },
+        },
+        excludeFromIndexes: ["properties"],
+        key: expect.objectContaining({
+          kind: "Distributed",
+          name: expect.stringMatching(/^Counter\.dummy-id\.[0-9a-f]{8}$/),
+        }),
+      });
+    });
+  });
 });
