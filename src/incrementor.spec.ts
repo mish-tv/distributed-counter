@@ -66,6 +66,42 @@ describe("increment", () => {
     });
   });
 
+  it("works properly when keys containing namespace and id are specified.", async () => {
+    const key = mocks.datastore.key({ path: ["Counter", 123], namespace: "dummy-namespace" });
+    await increment(key, "dummyValue", 2);
+
+    expect(mocks.datastoreMock.transactionMock.get).toBeCalledWith(
+      expect.objectContaining({
+        name: expect.stringMatching(/^dummy-namespace\.Counter\.123\.[0-9a-f]{8}$/),
+      }),
+    );
+    expect(mocks.datastoreMock.transactionMock.get).toBeCalledWith(
+      expect.objectContaining({ name: "dummy-namespace.Counter.123" }),
+    );
+    expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          key: expect.objectContaining({ kind: "Counter", id: 123, namespace: "dummy-namespace" }),
+        }),
+        key: expect.objectContaining({
+          name: expect.stringMatching(/^dummy-namespace\.Counter\.123\.[0-9a-f]{8}$/),
+        }),
+      }),
+    );
+    expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith(
+      expect.objectContaining({ key: expect.objectContaining({ kind: "Meta", name: "dummy-namespace.Counter.123" }) }),
+    );
+    expect(mocks.tasksMock.createTask).toBeCalledWith(
+      expect.objectContaining({
+        task: expect.objectContaining({
+          httpRequest: expect.objectContaining({
+            body: '{"key":{"namespace":"dummy-namespace","path":["Counter",{"type":"DatastoreInt","value":"123"}]}}',
+          }),
+        }),
+      }),
+    );
+  });
+
   context("If a distributed counter already exists", () => {
     beforeEach(() => {
       mocks.datastoreMock.transactionMock.get.mockImplementation((key) =>
