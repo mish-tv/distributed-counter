@@ -25,7 +25,13 @@
   "bin": {
     "aggregate-server": "./bin/aggregate-server.js"
   },
+  "files": [
+    "lib",
+    "bin"
+  ],
   "devDependencies": {
+    "@google-cloud/datastore": "^6.6.0",
+    "@google-cloud/tasks": "^2.4.2",
     "@mish-tv/esbuild-jest": "0.0.1",
     "@types/jest": "^27.0.1",
     "@types/jest-plugin-context": "^2.9.4",
