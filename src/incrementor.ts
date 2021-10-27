@@ -48,7 +48,7 @@ export const createIncrementor = (
 
     const distributedCounterKey = datastore.key([distributedCounterKind, `${keyText}.${wrapedGetDistributionKey(key)}`]);
 
-    await runInTransaction(async (transaction) => {
+    const needsCreateTask = await runInTransaction(async (transaction) => {
       const [[distributedCounter], [meta]]: [[Nullable<DistributedCounter>], [Nullable<Meta>]] = await Promise.all([
         transaction.get(distributedCounterKey),
         transaction.get(metaKey),
@@ -63,18 +63,24 @@ export const createIncrementor = (
         const data: Meta = { scheduleTime };
         transaction.upsert({ key: metaKey, data });
 
-        const task: Task = {
-          name: `${parent}/tasks/${randomUUID()}`,
-          scheduleTime: { seconds: scheduleTime / 1000 },
-          httpRequest: {
-            httpMethod: "POST",
-            url,
-            body: Buffer.from(JSON.stringify({ key: key.serialized })),
-            oidcToken: { serviceAccountEmail: serviceAccount },
-          },
-        };
-        await tasks.createTask({ parent, task });
+        return true;
       }
+
+      return false;
     }, datastore);
+
+    if (needsCreateTask) {
+      const task: Task = {
+        name: `${parent}/tasks/${randomUUID()}`,
+        scheduleTime: { seconds: scheduleTime / 1000 },
+        httpRequest: {
+          httpMethod: "POST",
+          url,
+          body: Buffer.from(JSON.stringify({ key: key.serialized })),
+          oidcToken: { serviceAccountEmail: serviceAccount },
+        },
+      };
+      await tasks.createTask({ parent, task });
+    }
   };
 };

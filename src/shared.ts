@@ -1,18 +1,40 @@
 import { Datastore, Key, Transaction } from "@google-cloud/datastore";
 import { createHash } from "crypto";
 
+const retry = 5;
+type ConflictError = { code: 10 };
+const isConflictError = (error: any): error is ConflictError => error.code === 10;
 export const runInTransaction = async <T>(handler: (transaction: Transaction) => Promisable<T>, datastore: Datastore) => {
-  const transaction = datastore.transaction();
-  try {
-    await transaction.run();
-    const result = await handler(transaction);
-    await transaction.commit();
+  let err: any;
+
+  for (let i = 0; i < retry; i++) {
+    const transaction = datastore.transaction();
+
+    const result = await (async () => {
+      try {
+        await transaction.run();
+
+        return await handler(transaction);
+      } catch (e) {
+        await transaction.rollback();
+        throw e;
+      }
+    })();
+
+    try {
+      await transaction.commit();
+    } catch (e) {
+      if (isConflictError(e)) {
+        err = e;
+        continue;
+      }
+      throw e;
+    }
 
     return result;
-  } catch (e) {
-    await transaction.rollback();
-    throw e;
   }
+
+  throw err;
 };
 
 export type DistributedCounter = { properties: Record<string, number>; key: string };
