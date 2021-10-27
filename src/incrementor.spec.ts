@@ -209,8 +209,8 @@ describe("increment", () => {
     });
   });
 
-  context.only("If a default entity is specified", () => {
-    it("sets a default entity for the distributed counter.", async () => {
+  context("If a initial is specified", () => {
+    it("sets a initial for the distributed counter.", async () => {
       const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
       await increment(key, "dummyValue", 2, () => ({ x: "foo", y: "bar" }));
 
@@ -218,7 +218,7 @@ describe("increment", () => {
         data: {
           key: "Counter.dummy-id",
           properties: { dummyValue: 2 },
-          defaultEntity: { x: "foo", y: "bar" },
+          initial: { x: "foo", y: "bar" },
         },
         excludeFromIndexes: ["properties"],
         key: expect.objectContaining({
@@ -232,19 +232,19 @@ describe("increment", () => {
       beforeEach(() => {
         mocks.datastoreMock.transactionMock.get.mockImplementation((key) =>
           key.kind === "Distributed"
-            ? [{ properties: { dummyValue: 101, dummy2: "foo" }, defaultEntity: { z: "baz" } }]
+            ? [{ properties: { dummyValue: 101, dummy2: "foo" }, initial: { z: "baz" } }]
             : [undefined],
         );
       });
 
-      it("does not override the default entity.", async () => {
+      it("does not override the initial.", async () => {
         const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
         await increment(key, "dummyValue", 1);
 
         expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
           data: {
             properties: { dummyValue: 102, dummy2: "foo" },
-            defaultEntity: { z: "baz" },
+            initial: { z: "baz" },
           },
           excludeFromIndexes: ["properties"],
           key: expect.objectContaining({

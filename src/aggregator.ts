@@ -24,10 +24,10 @@ export const createAggregator = (
       .run();
 
     const aggregated = new Map<string, number>();
-    let defaultEntity: any = {};
+    let initial: Nullable<Record<string, any>> = undefined;
 
-    for (const { properties, defaultEntity: tmpDefaultEntity } of distributedCounters) {
-      defaultEntity = tmpDefaultEntity;
+    for (const { properties, initial: tmpInitial } of distributedCounters) {
+      initial ??= tmpInitial;
       for (const [key, value] of Object.entries(properties)) {
         aggregated.set(key, (aggregated.get(key) ?? 0) + value);
       }
@@ -36,8 +36,8 @@ export const createAggregator = (
     if (aggregated.size === 0) return;
 
     await runInTransaction(async (transaction) => {
-      const [entity]: [Nullable<any>] = await transaction.get(key);
-      const updatedEntity = entity ?? defaultEntity;
+      const [entity]: [Nullable<Record<string, any>>] = await transaction.get(key);
+      const updatedEntity = entity ?? initial ?? {};
       let hasChange = false;
       for (const [key, value] of aggregated) {
         if (updatedEntity[key] === value) continue;

@@ -1,12 +1,17 @@
+import { Key } from "@google-cloud/datastore";
+
 import { createAggregator } from "./aggregator";
 import { createMocks } from "./tests";
 
 describe("aggregate", () => {
+  let key: Key;
+
   let mocks: ReturnType<typeof createMocks>;
   let aggregate: ReturnType<typeof createAggregator>;
 
   beforeEach(() => {
     mocks = createMocks();
+    key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
     aggregate = createAggregator("Distributed", mocks);
 
     mocks.datastoreMock.transactionMock.get.mockResolvedValue([undefined]);
@@ -16,7 +21,6 @@ describe("aggregate", () => {
   });
 
   it("aggregates the distributed counters and stores in the actual entity.", async () => {
-    const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
     await aggregate(key);
 
     expect(mocks.datastoreMock.createQuery).toBeCalledWith("Distributed");
@@ -31,7 +35,6 @@ describe("aggregate", () => {
     });
 
     it("reflects the value in the actual entity.", async () => {
-      const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
       await aggregate(key);
 
       expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({ key, data: { foo: "bar", x: 9, y: 18, z: 4 } });
@@ -44,7 +47,6 @@ describe("aggregate", () => {
     });
 
     it("doesn't do anything.", async () => {
-      const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
       await aggregate(key);
 
       expect(mocks.datastoreMock.transactionMock.get).not.toBeCalled();
@@ -59,11 +61,41 @@ describe("aggregate", () => {
     });
 
     it("does not do upsert", async () => {
-      const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
       await aggregate(key);
 
       expect(mocks.datastoreMock.transactionMock.get).toBeCalledWith(key);
       expect(mocks.datastoreMock.transactionMock.upsert).not.toBeCalled();
+    });
+  });
+
+  context("If an initial exists", () => {
+    beforeEach(() => {
+      mocks.datastoreMock.queryMock.run.mockReturnValue([
+        [
+          { properties: { x: 1 }, initial: { x: 2, foo: "bar" } },
+          { properties: { y: 2 }, initial: { bar: "baz" } },
+          { properties: { z: 4 } },
+          { properties: { x: 8, y: 16 } },
+        ],
+      ]);
+    });
+
+    it("uses initial as the initial entity, and ignores the value to be aggregated, even if it is set to the initial.", async () => {
+      await aggregate(key);
+
+      expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({ key, data: { foo: "bar", x: 9, y: 18, z: 4 } });
+    });
+
+    context("If the actual entity already exists", () => {
+      beforeEach(() => {
+        mocks.datastoreMock.transactionMock.get.mockResolvedValue([{ bar: "baz", x: 10000 }]);
+      });
+
+      it("doesn't use the initial.", async () => {
+        await aggregate(key);
+
+        expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({ key, data: { bar: "baz", x: 9, y: 18, z: 4 } });
+      });
     });
   });
 });
