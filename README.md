@@ -59,6 +59,7 @@ const increment = createIncrementor(
 
 export const incrementCounter = async (id: string, value: number) => {
   const key = datastore.key(["counter", id]);
-  await increment(key, "value", value);
+  const initialEntity = { foo: "bar" };
+  await increment(key, "value", value, () => initialEntity);
 };
 ```
