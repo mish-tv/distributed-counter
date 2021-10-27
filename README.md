@@ -19,7 +19,7 @@ npm install --save @mish-tv/distributed-counter
 ### Preparation
 - Enable Datastore / CloudRun / CloudTasks.
 - Create a Queue with an arbitrary name in CloudTasks.  
-In the following example, you will need a queue named distributed-counter-Counter.
+In the following example, you will need a queue named distributed-counter-counter.
 - Create a service account to run CloudRun from CloudTasks.  
 Please refer to [this document](https://cloud.google.com/tasks/docs/creating-http-target-tasks#sa).
 
@@ -58,7 +58,7 @@ const increment = createIncrementor(
 );
 
 export const incrementCounter = async (id: string, value: number) => {
-  const key = datastore.key(["Counter", id]);
+  const key = datastore.key(["counter", id]);
   await increment(key, "value", value);
 };
 ```
