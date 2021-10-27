@@ -1,4 +1,4 @@
-import { createMocks } from "./tests";
+import { ConflictError, createMocks } from "./tests";
 import { createHashKeys, runInTransaction } from "./shared";
 
 describe("createHashKeys", () => {
@@ -15,10 +15,6 @@ describe("createHashKeys", () => {
 });
 
 describe("runInTransaction", () => {
-  class ConflictError extends Error {
-    code = 10;
-    message = "dummy conflict error";
-  }
   let mocks: ReturnType<typeof createMocks>;
 
   beforeEach(() => {

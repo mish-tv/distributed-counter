@@ -1,5 +1,5 @@
 import { createIncrementor } from "./incrementor";
-import { createMocks } from "./tests";
+import { ConflictError, createMocks } from "./tests";
 
 describe("increment", () => {
   const url = "http://aggregate.example.com";
@@ -191,6 +191,21 @@ describe("increment", () => {
 
       expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledTimes(2);
       expect(mocks.tasksMock.createTask).toBeCalled();
+    });
+  });
+
+  context("If commit throws a conflicts error only once", () => {
+    beforeEach(() => {
+      mocks.datastoreMock.transactionMock.commit.mockRejectedValueOnce(new ConflictError());
+    });
+
+    it("re-runs the process.", async () => {
+      const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
+      await increment(key, "dummyValue", 2);
+
+      expect(mocks.datastoreMock.transactionMock.get).toBeCalledTimes(4);
+      expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledTimes(4);
+      expect(mocks.tasksMock.createTask).toBeCalledTimes(1);
     });
   });
 });

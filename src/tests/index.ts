@@ -35,3 +35,8 @@ export const createMocks = () => {
     tasks: tasksMock as unknown as CloudTasksClient,
   };
 };
+
+export class ConflictError extends Error {
+  code = 10;
+  message = "dummy conflict error";
+}
