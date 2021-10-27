@@ -15,8 +15,17 @@ describe("createHashKeys", () => {
 });
 
 describe("runInTransaction", () => {
+  class ConflictError extends Error {
+    code = 10;
+    message = "dummy conflict error";
+  }
+  let mocks: ReturnType<typeof createMocks>;
+
+  beforeEach(() => {
+    mocks = createMocks();
+  });
+
   it("will commit if the handler exits successfully.", async () => {
-    const mocks = createMocks();
     expect(await runInTransaction(() => 1, mocks.datastore)).toBe(1);
     expect(mocks.datastoreMock.transactionMock.run).toBeCalledTimes(1);
     expect(mocks.datastoreMock.transactionMock.commit).toBeCalledTimes(1);
@@ -33,5 +42,65 @@ describe("runInTransaction", () => {
     expect(mocks.datastoreMock.transactionMock.run).toBeCalledTimes(1);
     expect(mocks.datastoreMock.transactionMock.rollback).toBeCalledTimes(1);
     expect(mocks.datastoreMock.transactionMock.commit).not.toBeCalled();
+  });
+
+  context("If commit throws a conflicts error only once", () => {
+    beforeEach(() => {
+      mocks.datastoreMock.transactionMock.commit.mockRejectedValueOnce(new ConflictError());
+    });
+
+    it("recreates a transaction and re-execute the anonymous function.", async () => {
+      let i = 0;
+      await runInTransaction(() => {
+        i += 1;
+      }, mocks.datastore);
+      expect(i).toBe(2);
+      expect(mocks.datastoreMock.transaction).toBeCalledTimes(2);
+      expect(mocks.datastoreMock.transactionMock.run).toBeCalledTimes(2);
+      expect(mocks.datastoreMock.transactionMock.commit).toBeCalledTimes(2);
+      expect(mocks.datastoreMock.transactionMock.rollback).not.toBeCalled();
+    });
+  });
+
+  context("If commit always throws a conflict error", () => {
+    beforeEach(() => {
+      mocks.datastoreMock.transactionMock.commit.mockRejectedValue(new ConflictError());
+    });
+
+    it("throws an exception after re-running 5 times.", async () => {
+      let i = 0;
+
+      await expect(() =>
+        runInTransaction(() => {
+          i += 1;
+        }, mocks.datastore),
+      ).rejects.toThrow("dummy conflict error");
+      expect(i).toBe(5);
+      expect(mocks.datastoreMock.transaction).toBeCalledTimes(5);
+      expect(mocks.datastoreMock.transactionMock.run).toBeCalledTimes(5);
+      expect(mocks.datastoreMock.transactionMock.commit).toBeCalledTimes(5);
+      expect(mocks.datastoreMock.transactionMock.rollback).not.toBeCalled();
+    });
+  });
+
+  context("If commit throws a non-conflict error", () => {
+    beforeEach(() => {
+      mocks.datastoreMock.transactionMock.commit.mockRejectedValue(new Error("dummy error"));
+    });
+
+    it("will throw an exception soon.", async () => {
+      let i = 0;
+
+      await expect(() =>
+        runInTransaction(() => {
+          i += 1;
+        }, mocks.datastore),
+      ).rejects.toThrow("dummy error");
+      expect(i).toBe(1);
+      expect(mocks.datastoreMock.transaction).toBeCalledTimes(1);
+      expect(mocks.datastoreMock.transactionMock.run).toBeCalledTimes(1);
+      expect(mocks.datastoreMock.transactionMock.commit).toBeCalledTimes(1);
+      expect(mocks.datastoreMock.transactionMock.rollback).not.toBeCalled();
+    });
   });
 });
