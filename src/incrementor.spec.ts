@@ -115,7 +115,7 @@ describe("increment", () => {
 
     it("increments and stores the value of the counter that existed.", async () => {
       const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
-      await increment(key, "dummyValue");
+      await increment(key, "dummyValue", 1);
 
       expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
         data: {
@@ -206,6 +206,53 @@ describe("increment", () => {
       expect(mocks.datastoreMock.transactionMock.get).toBeCalledTimes(4);
       expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledTimes(4);
       expect(mocks.tasksMock.createTask).toBeCalledTimes(1);
+    });
+  });
+
+  context.only("If a default entity is specified", () => {
+    it("sets a default entity for the distributed counter.", async () => {
+      const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
+      await increment(key, "dummyValue", 2, () => ({ x: "foo", y: "bar" }));
+
+      expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
+        data: {
+          key: "Counter.dummy-id",
+          properties: { dummyValue: 2 },
+          defaultEntity: { x: "foo", y: "bar" },
+        },
+        excludeFromIndexes: ["properties"],
+        key: expect.objectContaining({
+          kind: "Distributed",
+          name: expect.stringMatching(/^Counter\.dummy-id\.[0-9a-f]{8}$/),
+        }),
+      });
+    });
+
+    context("If a distributed counter already exists", () => {
+      beforeEach(() => {
+        mocks.datastoreMock.transactionMock.get.mockImplementation((key) =>
+          key.kind === "Distributed"
+            ? [{ properties: { dummyValue: 101, dummy2: "foo" }, defaultEntity: { z: "baz" } }]
+            : [undefined],
+        );
+      });
+
+      it("does not override the default entity.", async () => {
+        const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
+        await increment(key, "dummyValue", 1);
+
+        expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
+          data: {
+            properties: { dummyValue: 102, dummy2: "foo" },
+            defaultEntity: { z: "baz" },
+          },
+          excludeFromIndexes: ["properties"],
+          key: expect.objectContaining({
+            kind: "Distributed",
+            name: expect.stringMatching(/^Counter\.dummy-id\.[0-9a-f]{8}$/),
+          }),
+        });
+      });
     });
   });
 });
