@@ -18,14 +18,16 @@ export const createAggregator = (
 
   return async (key: Key) => {
     const keyText = keyToString(key);
-    const [distributedCounters]: [Pick<DistributedCounter, "properties">[], any] = await datastore
+    const [distributedCounters]: [DistributedCounter[], any] = await datastore
       .createQuery(distributedCounterKind)
       .filter("key", keyText)
       .run();
 
     const aggregated = new Map<string, number>();
+    let defaultEntity: any = {};
 
-    for (const { properties } of distributedCounters) {
+    for (const { properties, defaultEntity: tmpDefaultEntity } of distributedCounters) {
+      defaultEntity = tmpDefaultEntity;
       for (const [key, value] of Object.entries(properties)) {
         aggregated.set(key, (aggregated.get(key) ?? 0) + value);
       }
@@ -34,8 +36,8 @@ export const createAggregator = (
     if (aggregated.size === 0) return;
 
     await runInTransaction(async (transaction) => {
-      const [entity]: [Nullable<Record<string, number>>] = await transaction.get(key);
-      const updatedEntity = entity ?? {};
+      const [entity]: [Nullable<any>] = await transaction.get(key);
+      const updatedEntity = entity ?? defaultEntity;
       let hasChange = false;
       for (const [key, value] of aggregated) {
         if (updatedEntity[key] === value) continue;

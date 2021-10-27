@@ -40,7 +40,7 @@ export const createIncrementor = (
   const getDelay = typeof delay === "number" ? () => delay : delay;
   const wrapedGetDistributionKey = (key: Key) => getDistributionKey(getDistributionNumber(key));
 
-  return async (key: Key, property: string, number = 1) => {
+  return async (key: Key, property: string, number: number, defaultEntity?: () => any) => {
     const parent = getQueuePath(key, tasks);
     const scheduleTime = Date.now() + getDelay(key);
     const keyText = keyToString(key);
@@ -53,7 +53,14 @@ export const createIncrementor = (
         transaction.get(distributedCounterKey),
         transaction.get(metaKey),
       ]);
-      const updatedDistributedCounter = distributedCounter ?? { properties: {}, key: keyText };
+      const updatedDistributedCounter =
+        distributedCounter ??
+        (() => {
+          const entity: DistributedCounter = { properties: {}, key: keyText };
+          if (defaultEntity != undefined) entity.defaultEntity = defaultEntity();
+
+          return entity;
+        })();
       updatedDistributedCounter.properties[property] = (updatedDistributedCounter.properties[property] ?? 0) + number;
 
       const entity = { key: distributedCounterKey, data: updatedDistributedCounter, excludeFromIndexes: ["properties"] };
