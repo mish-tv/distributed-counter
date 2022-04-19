@@ -30,7 +30,7 @@
     "bin"
   ],
   "devDependencies": {
-    "@google-cloud/datastore": "^6.6.0",
+    "@google-cloud/datastore": "github:mish-tv/nodejs-datastore",
     "@google-cloud/tasks": "^2.4.2",
     "@swc/core": "^1.2.103",
     "@swc/jest": "^0.2.5",
@@ -57,7 +57,7 @@
     "typescript": "^4.4.2"
   },
   "peerDependencies": {
-    "@google-cloud/datastore": "^6.6.0",
+    "@google-cloud/datastore": "github:mish-tv/nodejs-datastore",
     "@google-cloud/tasks": "^2.4.2"
   },
   "dependencies": {

@@ -36,8 +36,9 @@ export const createAggregator = (
     if (aggregated.size === 0) return;
 
     await runInTransaction(async (transaction) => {
-      const [entity]: [Nullable<Record<string, any>>] = await transaction.get(key);
+      const [entity]: [Nullable<any>] = await transaction.get(key);
       const updatedEntity = entity ?? initial ?? {};
+      const excludeFromIndexes = updatedEntity[Datastore.EXCLUDE_FROM_INDEXES] ?? [];
       let hasChange = false;
       for (const [key, value] of aggregated) {
         if (updatedEntity[key] === value) continue;
@@ -45,7 +46,7 @@ export const createAggregator = (
         updatedEntity[key] = value;
       }
 
-      if (hasChange) transaction.upsert({ key, data: updatedEntity });
+      if (hasChange) transaction.upsert({ key, data: updatedEntity, excludeFromIndexes });
     }, datastore);
   };
 };
