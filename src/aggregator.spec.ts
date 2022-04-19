@@ -1,4 +1,4 @@
-import { Key } from "@google-cloud/datastore";
+import { Datastore, Key } from "@google-cloud/datastore";
 
 import { createAggregator } from "./aggregator";
 import { createMocks } from "./tests";
@@ -26,18 +26,28 @@ describe("aggregate", () => {
     expect(mocks.datastoreMock.createQuery).toBeCalledWith("Distributed");
     expect(mocks.datastoreMock.queryMock.filter).toBeCalledWith("key", "Counter.dummy-id");
     expect(mocks.datastoreMock.transactionMock.get).toBeCalledWith(key);
-    expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({ key, data: { x: 9, y: 18, z: 4 } });
+    expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
+      key,
+      data: { x: 9, y: 18, z: 4 },
+      excludeFromIndexes: [],
+    });
   });
 
   context("If the actual entity already exists", () => {
     beforeEach(() => {
-      mocks.datastoreMock.transactionMock.get.mockResolvedValue([{ foo: "bar", x: 10000 }]);
+      mocks.datastoreMock.transactionMock.get.mockResolvedValue([
+        { foo: "bar", x: 10000, [Datastore.EXCLUDE_FROM_INDEXES]: ["foo"] },
+      ]);
     });
 
     it("reflects the value in the actual entity.", async () => {
       await aggregate(key);
 
-      expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({ key, data: { foo: "bar", x: 9, y: 18, z: 4 } });
+      expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
+        key,
+        data: { foo: "bar", x: 9, y: 18, z: 4, [Datastore.EXCLUDE_FROM_INDEXES]: ["foo"] },
+        excludeFromIndexes: ["foo"],
+      });
     });
   });
 
@@ -57,7 +67,9 @@ describe("aggregate", () => {
 
   context("If no changes were made to the properties", () => {
     beforeEach(() => {
-      mocks.datastoreMock.transactionMock.get.mockResolvedValue([{ foo: "bar", x: 9, y: 18, z: 4 }]);
+      mocks.datastoreMock.transactionMock.get.mockResolvedValue([
+        { foo: "bar", x: 9, y: 18, z: 4, [Datastore.EXCLUDE_FROM_INDEXES]: ["foo"] },
+      ]);
     });
 
     it("does not do upsert", async () => {
@@ -83,18 +95,28 @@ describe("aggregate", () => {
     it("uses initial as the initial entity, and ignores the value to be aggregated, even if it is set to the initial.", async () => {
       await aggregate(key);
 
-      expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({ key, data: { foo: "bar", x: 9, y: 18, z: 4 } });
+      expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
+        key,
+        data: { foo: "bar", x: 9, y: 18, z: 4 },
+        excludeFromIndexes: [],
+      });
     });
 
     context("If the actual entity already exists", () => {
       beforeEach(() => {
-        mocks.datastoreMock.transactionMock.get.mockResolvedValue([{ bar: "baz", x: 10000 }]);
+        mocks.datastoreMock.transactionMock.get.mockResolvedValue([
+          { bar: "baz", x: 10000, [Datastore.EXCLUDE_FROM_INDEXES]: ["bar"] },
+        ]);
       });
 
       it("doesn't use the initial.", async () => {
         await aggregate(key);
 
-        expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({ key, data: { bar: "baz", x: 9, y: 18, z: 4 } });
+        expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
+          key,
+          data: { bar: "baz", x: 9, y: 18, z: 4, [Datastore.EXCLUDE_FROM_INDEXES]: ["bar"] },
+          excludeFromIndexes: ["bar"],
+        });
       });
     });
   });
