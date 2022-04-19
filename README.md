@@ -18,20 +18,20 @@ npm install --save @mish-tv/distributed-counter
 ## Usage
 ### Preparation
 - Enable Datastore / CloudRun / CloudTasks.
-- Create a Queue with an arbitrary name in CloudTasks.  
+- Create a Queue with an arbitrary name in CloudTasks.
 In the following example, you will need a queue named distributed-counter-counter.
-- Create a service account to run CloudRun from CloudTasks.  
+- Create a service account to run CloudRun from CloudTasks.
 Please refer to [this document](https://cloud.google.com/tasks/docs/creating-http-target-tasks#sa).
 
 ### Deploy aggregate server
-Deploy a server application to CloudRun.  
+Deploy a server application to CloudRun.
 You can use the [image](https://hub.docker.com/repository/docker/malt03/aggregate-server) I have created.
 
-The deployment to CloudRun is complete, note the URL to request.  
+The deployment to CloudRun is complete, note the URL to request.
 Apply the URL you have note to the constant named url in the following sample code.
 
 ```sh
-TAG=v0.0.6
+TAG=v0.0.7
 IMAGE=us-east4-docker.pkg.dev/${YOUR_PROJECT_ID}/distributed-counter/aggregate-server:${TAG}
 
 docker pull malt03/aggregate-server:${TAG}
