@@ -32,13 +32,14 @@ Apply the URL you have note to the constant named url in the following sample co
 
 ```sh
 TAG=v0.0.7
+REGION=${your_region}
 IMAGE=us-east4-docker.pkg.dev/${YOUR_PROJECT_ID}/distributed-counter/aggregate-server:${TAG}
 
 docker pull malt03/aggregate-server:${TAG}
 docker tag malt03/aggregate-server:${TAG} ${IMAGE}
 docker push ${IMAGE}
 
-gcloud run deploy aggregate-distributed-counter --image ${IMAGE} --platform managed --region us-east4
+gcloud run deploy aggregate-distributed-counter --image ${IMAGE} --platform managed --region ${REGION} --no-allow-unauthenticated
 ```
 
 ### Implementation
