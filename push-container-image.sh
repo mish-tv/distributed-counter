@@ -1,6 +1,6 @@
 set -eu
 
-TAG="v0.0.7"
+TAG="v1.0.0"
 
 gcloud config set project mish-tv
 
