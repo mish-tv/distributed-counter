@@ -37,7 +37,12 @@ export const runInTransaction = async <T>(handler: (transaction: Transaction) =>
   throw err;
 };
 
-export type DistributedCounter = { properties: Record<string, number>; initial?: Record<string, any>; key: string };
+export type DistributedCounter = {
+  properties: Record<string, number>;
+  initial?: Record<string, any>;
+  isIgnoreIfNoEntity?: true;
+  key: string;
+};
 
 export const createHashKeys = () => {
   const result: string[] = [];

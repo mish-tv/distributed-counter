@@ -25,9 +25,11 @@ export const createAggregator = (
 
     const aggregated = new Map<string, number>();
     let initial: Nullable<Record<string, any>> = undefined;
+    let isIgnoreIfNoEntity = false;
 
-    for (const { properties, initial: tmpInitial } of distributedCounters) {
+    for (const { properties, initial: tmpInitial, isIgnoreIfNoEntity: tmpIsIgnoreIfNoEntity } of distributedCounters) {
       initial ??= tmpInitial;
+      if (tmpIsIgnoreIfNoEntity) isIgnoreIfNoEntity = true;
       for (const [key, value] of Object.entries(properties)) {
         aggregated.set(key, (aggregated.get(key) ?? 0) + value);
       }
@@ -37,6 +39,8 @@ export const createAggregator = (
 
     await runInTransaction(async (transaction) => {
       const [entity]: [Nullable<any>] = await transaction.get(key);
+      if (entity == undefined && isIgnoreIfNoEntity) return;
+
       const updatedEntity = entity ?? initial ?? {};
       const excludeFromIndexes = updatedEntity[Datastore.EXCLUDE_FROM_INDEXES] ?? [];
       let hasChange = false;

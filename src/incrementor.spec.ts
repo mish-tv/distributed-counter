@@ -42,6 +42,7 @@ describe("increment", () => {
       data: {
         key: "Counter.dummy-id",
         properties: { dummyValue: 2 },
+        initial: {},
       },
       excludeFromIndexes: ["properties"],
       key: expect.objectContaining({
@@ -120,6 +121,7 @@ describe("increment", () => {
       expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
         data: {
           properties: { dummyValue: 102, dummy2: "foo" },
+          initial: {},
         },
         excludeFromIndexes: ["properties"],
         key: expect.objectContaining({
@@ -144,6 +146,7 @@ describe("increment", () => {
       expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
         data: {
           properties: { dummyValue: 3, dummy2: "foo" },
+          initial: {},
         },
         excludeFromIndexes: ["properties"],
         key: expect.objectContaining({
@@ -212,7 +215,7 @@ describe("increment", () => {
   context("If a initial is specified", () => {
     it("sets a initial for the distributed counter.", async () => {
       const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
-      await increment(key, "dummyValue", 2, () => ({ x: "foo", y: "bar" }));
+      await increment(key, "dummyValue", 2, { type: "INITIALIZE", properties: () => ({ x: "foo", y: "bar" }) });
 
       expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
         data: {
@@ -237,14 +240,59 @@ describe("increment", () => {
         );
       });
 
-      it("does not override the initial.", async () => {
+      it("overwrite the initial.", async () => {
         const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
-        await increment(key, "dummyValue", 1);
+        await increment(key, "dummyValue", 1, { type: "INITIALIZE", properties: () => ({ x: "foo", y: "bar" }) });
 
         expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
           data: {
             properties: { dummyValue: 102, dummy2: "foo" },
-            initial: { z: "baz" },
+            initial: { x: "foo", y: "bar" },
+          },
+          excludeFromIndexes: ["properties"],
+          key: expect.objectContaining({
+            kind: "Distributed",
+            name: expect.stringMatching(/^Counter\.dummy-id\.[0-9a-f]{8}$/),
+          }),
+        });
+      });
+    });
+  });
+
+  context("If a ignore is specified", () => {
+    it("sets ignore for the distributed counter.", async () => {
+      const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
+      await increment(key, "dummyValue", 2, { type: "IGNORE" });
+
+      expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
+        data: {
+          key: "Counter.dummy-id",
+          properties: { dummyValue: 2 },
+          isIgnoreIfNoEntity: true,
+        },
+        excludeFromIndexes: ["properties"],
+        key: expect.objectContaining({
+          kind: "Distributed",
+          name: expect.stringMatching(/^Counter\.dummy-id\.[0-9a-f]{8}$/),
+        }),
+      });
+    });
+
+    context("If a distributed counter already exists", () => {
+      beforeEach(() => {
+        mocks.datastoreMock.transactionMock.get.mockImplementation((key) =>
+          key.kind === "Distributed" ? [{ properties: { dummyValue: 101, dummy2: "foo" } }] : [undefined],
+        );
+      });
+
+      it("overwrite the ignore.", async () => {
+        const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
+        await increment(key, "dummyValue", 1, { type: "IGNORE" });
+
+        expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
+          data: {
+            properties: { dummyValue: 102, dummy2: "foo" },
+            isIgnoreIfNoEntity: true,
           },
           excludeFromIndexes: ["properties"],
           key: expect.objectContaining({

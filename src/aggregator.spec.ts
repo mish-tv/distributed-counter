@@ -120,4 +120,41 @@ describe("aggregate", () => {
       });
     });
   });
+
+  context("If ignore is true", () => {
+    beforeEach(() => {
+      mocks.datastoreMock.queryMock.run.mockReturnValue([
+        [
+          { properties: { x: 1 }, initial: { x: 2, foo: "bar" } },
+          { properties: { y: 2 }, initial: { bar: "baz" } },
+          { properties: { z: 4 }, isIgnoreIfNoEntity: true },
+          { properties: { x: 8, y: 16 } },
+        ],
+      ]);
+    });
+
+    it("Ignore if entity does not exist.", async () => {
+      await aggregate(key);
+
+      expect(mocks.datastoreMock.transactionMock.upsert).not.toBeCalled();
+    });
+
+    context("If the actual entity already exists", () => {
+      beforeEach(() => {
+        mocks.datastoreMock.transactionMock.get.mockResolvedValue([
+          { bar: "baz", x: 10000, [Datastore.EXCLUDE_FROM_INDEXES]: ["bar"] },
+        ]);
+      });
+
+      it("update the entity.", async () => {
+        await aggregate(key);
+
+        expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
+          key,
+          data: { bar: "baz", x: 9, y: 18, z: 4, [Datastore.EXCLUDE_FROM_INDEXES]: ["bar"] },
+          excludeFromIndexes: ["bar"],
+        });
+      });
+    });
+  });
 });

@@ -24,6 +24,9 @@ const defaultDependencies = (): Dependencies => ({
 
 const getDistributionKey = (distributionNumber: number) => hashKeys[Math.floor(Math.random() * distributionNumber)];
 
+type BehaviorInEntityDoseNotExist = { type: "INITIALIZE"; properties: () => Record<string, any> } | { type: "IGNORE" };
+const defaultBehaviorInEntityDoseNotExist: BehaviorInEntityDoseNotExist = { type: "INITIALIZE", properties: () => ({}) };
+
 export const createIncrementor = (
   url: string,
   serviceAccount: string,
@@ -40,7 +43,12 @@ export const createIncrementor = (
   const getDelay = typeof delay === "number" ? () => delay : delay;
   const wrapedGetDistributionKey = (key: Key) => getDistributionKey(getDistributionNumber(key));
 
-  return async (key: Key, property: string, number: number, initial?: () => Record<string, any>) => {
+  return async (
+    key: Key,
+    property: string,
+    number: number,
+    behaviorInEntityDoseNotExist: BehaviorInEntityDoseNotExist = defaultBehaviorInEntityDoseNotExist,
+  ) => {
     const parent = getQueuePath(key, tasks);
     const scheduleTime = Date.now() + getDelay(key);
     const keyText = keyToString(key);
@@ -53,14 +61,17 @@ export const createIncrementor = (
         transaction.get(distributedCounterKey),
         transaction.get(metaKey),
       ]);
-      const updatedDistributedCounter =
-        distributedCounter ??
-        (() => {
-          const entity: DistributedCounter = { properties: {}, key: keyText };
-          if (initial != undefined) entity.initial = initial();
+      const updatedDistributedCounter = distributedCounter ?? { properties: {}, key: keyText };
 
-          return entity;
-        })();
+      switch (behaviorInEntityDoseNotExist.type) {
+        case "INITIALIZE":
+          updatedDistributedCounter.initial = behaviorInEntityDoseNotExist.properties();
+          break;
+        case "IGNORE":
+          updatedDistributedCounter.isIgnoreIfNoEntity = true;
+          break;
+      }
+
       updatedDistributedCounter.properties[property] = (updatedDistributedCounter.properties[property] ?? 0) + number;
 
       const entity = { key: distributedCounterKey, data: updatedDistributedCounter, excludeFromIndexes: ["properties"] };
