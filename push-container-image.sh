@@ -1,8 +1,10 @@
 set -eu
 
+npm run build
+
 TAG="v1.0.0"
 
-gcloud config set project mish-tv
+gcloud config configurations activate mish-tv
 
 current=${PWD}
 cd ./container/aggregate-server
