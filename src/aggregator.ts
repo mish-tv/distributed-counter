@@ -5,13 +5,27 @@ import { DistributedCounter, keyToString, runInTransaction } from "./shared";
 type Dependencies = {
   datastore: Datastore;
 };
+type ExcludeFromIndexes = { [K in string]?: string[] };
 
 const defaultDependencies = (): Dependencies => ({
   datastore: new Datastore(),
 });
+export const isExcludeFromIndexes = (excludeFromIndexes: any): excludeFromIndexes is ExcludeFromIndexes => {
+  if (typeof excludeFromIndexes !== "object") return false;
+  for (const [key, values] of Object.entries(excludeFromIndexes)) {
+    if (typeof key !== "string") return false;
+    if (!Array.isArray(values)) return false;
+    for (const value of values) {
+      if (typeof value !== "string") return false;
+    }
+  }
+
+  return true;
+};
 
 export const createAggregator = (
   distributedCounterKind = "distributed_counter",
+  excludeFromIndexes: ExcludeFromIndexes = {},
   dependencies: Dependencies = defaultDependencies(),
 ) => {
   const { datastore } = dependencies;
@@ -42,7 +56,6 @@ export const createAggregator = (
       if (entity == undefined && isIgnoreIfNoEntity) return;
 
       const updatedEntity = entity ?? initial ?? {};
-      const excludeFromIndexes = updatedEntity[Datastore.EXCLUDE_FROM_INDEXES] ?? [];
       let hasChange = false;
       for (const [key, value] of aggregated) {
         if (updatedEntity[key] === value) continue;
@@ -50,7 +63,7 @@ export const createAggregator = (
         updatedEntity[key] = value;
       }
 
-      if (hasChange) transaction.upsert({ key, data: updatedEntity, excludeFromIndexes });
+      if (hasChange) transaction.upsert({ key, data: updatedEntity, excludeFromIndexes: excludeFromIndexes[key.kind] ?? [] });
     }, datastore);
   };
 };

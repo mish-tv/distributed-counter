@@ -12,7 +12,7 @@ describe("aggregate", () => {
   beforeEach(() => {
     mocks = createMocks();
     key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
-    aggregate = createAggregator("Distributed", mocks);
+    aggregate = createAggregator("Distributed", {}, mocks);
 
     mocks.datastoreMock.transactionMock.get.mockResolvedValue([undefined]);
     mocks.datastoreMock.queryMock.run.mockReturnValue([

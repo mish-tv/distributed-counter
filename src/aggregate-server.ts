@@ -2,11 +2,22 @@ import { Datastore } from "@google-cloud/datastore";
 import { createServer, RequestListener } from "http";
 import { logger } from "@mish-tv/stackdriver-logger";
 
-import { createAggregator } from "./aggregator";
+import { createAggregator, isExcludeFromIndexes } from "./aggregator";
 
 const datastore = new Datastore();
 const distributedCounterKind = process.env["DISTRIBUTED_COUNTER_KIND"];
-const aggregate = createAggregator(distributedCounterKind, { datastore });
+const excludeFromIndexes = (() => {
+  const excludeFromIndexesJSON = process.env["DISTRIBUTED_COUNTER_EXCLUDE_FROM_INDEXES"];
+  if (excludeFromIndexesJSON == undefined) return {};
+  const excludeFromIndexes = JSON.parse(excludeFromIndexesJSON);
+  if (!isExcludeFromIndexes(excludeFromIndexes)) {
+    throw new Error(`illegal DISTRIBUTED_COUNTER_EXCLUDE_FROM_INDEXES: ${excludeFromIndexesJSON}`);
+  }
+
+  return excludeFromIndexes;
+})();
+
+const aggregate = createAggregator(distributedCounterKind, excludeFromIndexes, { datastore });
 
 const listener: RequestListener = (req, res) => {
   const buffer: Uint8Array[] = [];
