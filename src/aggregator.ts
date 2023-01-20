@@ -14,7 +14,9 @@ const defaultDependencies = (): Dependencies => ({
 export const isExcludeFromIndexes = (
   excludeFromIndexes: any
 ): excludeFromIndexes is ExcludeFromIndexes => {
+  if (excludeFromIndexes == undefined) return false;
   if (typeof excludeFromIndexes !== "object") return false;
+  if (Array.isArray(excludeFromIndexes)) return false;
   for (const [key, values] of Object.entries(excludeFromIndexes)) {
     if (typeof key !== "string") return false;
     if (!Array.isArray(values)) return false;

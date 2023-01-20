@@ -1,6 +1,6 @@
 import { Key } from "@google-cloud/datastore";
 
-import { createAggregator } from "./aggregator";
+import { createAggregator, isExcludeFromIndexes } from "./aggregator";
 import { createMocks } from "./tests";
 
 describe("aggregate", () => {
@@ -184,5 +184,19 @@ describe("aggregate", () => {
         excludeFromIndexes: ["foo", "bar"],
       });
     });
+  });
+});
+
+describe("isExcludeFromIndexes", () => {
+  it("checks if the type is ExcludeFromIndexes.", () => {
+    expect(isExcludeFromIndexes({})).toBeTruthy();
+    expect(isExcludeFromIndexes({ a: ["a", "b"], c: ["d"] })).toBeTruthy();
+    expect(isExcludeFromIndexes({ a: ["a", "b", 1], c: ["d"] })).toBeFalsy();
+    expect(isExcludeFromIndexes({ a: ["a", "b"], 1: ["d"] })).toBeTruthy();
+    expect(isExcludeFromIndexes({ a: ["a", "b"], c: "d" })).toBeFalsy();
+    expect(isExcludeFromIndexes("a")).toBeFalsy();
+    expect(isExcludeFromIndexes(undefined)).toBeFalsy();
+    expect(isExcludeFromIndexes(null)).toBeFalsy();
+    expect(isExcludeFromIndexes([])).toBeFalsy();
   });
 });
