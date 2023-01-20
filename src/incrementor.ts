@@ -2,7 +2,13 @@ import { randomUUID } from "crypto";
 import { Datastore, Key } from "@google-cloud/datastore";
 import { CloudTasksClient, protos as tasksProtos } from "@google-cloud/tasks";
 
-import { DistributedCounter, hashKeys, keyToString, runInTransaction } from "./shared";
+import { Nullable } from "./types";
+import {
+  DistributedCounter,
+  hashKeys,
+  keyToString,
+  runInTransaction,
+} from "./shared";
 
 const marginDuration = 5000;
 
@@ -22,10 +28,16 @@ const defaultDependencies = (): Dependencies => ({
   tasks: new CloudTasksClient(),
 });
 
-const getDistributionKey = (distributionNumber: number) => hashKeys[Math.floor(Math.random() * distributionNumber)];
+const getDistributionKey = (distributionNumber: number) =>
+  hashKeys[Math.floor(Math.random() * distributionNumber)];
 
-type BehaviorInEntityDoseNotExist = { type: "INITIALIZE"; properties: () => Record<string, any> } | { type: "IGNORE" };
-const defaultBehaviorInEntityDoseNotExist: BehaviorInEntityDoseNotExist = { type: "INITIALIZE", properties: () => ({}) };
+type BehaviorInEntityDoseNotExist =
+  | { type: "INITIALIZE"; properties: () => Record<string, any> }
+  | { type: "IGNORE" };
+const defaultBehaviorInEntityDoseNotExist: BehaviorInEntityDoseNotExist = {
+  type: "INITIALIZE",
+  properties: () => ({}),
+};
 
 export const createIncrementor = (
   url: string,
@@ -35,49 +47,72 @@ export const createIncrementor = (
   delay: Delay = 10_000,
   distributedCounterKind = "distributed_counter",
   metaKind = "distributed_counter_meta",
-  dependencies: Dependencies = defaultDependencies(),
+  dependencies: Dependencies = defaultDependencies()
 ) => {
   const { datastore, tasks } = dependencies;
-  const getQueuePath = typeof queuePath === "string" ? () => queuePath : queuePath;
-  const getDistributionNumber = typeof distributionNumber === "number" ? () => distributionNumber : distributionNumber;
+  const getQueuePath =
+    typeof queuePath === "string" ? () => queuePath : queuePath;
+  const getDistributionNumber =
+    typeof distributionNumber === "number"
+      ? () => distributionNumber
+      : distributionNumber;
   const getDelay = typeof delay === "number" ? () => delay : delay;
-  const wrapedGetDistributionKey = (key: Key) => getDistributionKey(getDistributionNumber(key));
+  const wrapedGetDistributionKey = (key: Key) =>
+    getDistributionKey(getDistributionNumber(key));
 
   return async (
     key: Key,
     property: string,
     number: number,
-    behaviorInEntityDoseNotExist: BehaviorInEntityDoseNotExist = defaultBehaviorInEntityDoseNotExist,
+    behaviorInEntityDoseNotExist: BehaviorInEntityDoseNotExist = defaultBehaviorInEntityDoseNotExist
   ) => {
     const parent = getQueuePath(key, tasks);
     const scheduleTime = Date.now() + getDelay(key);
     const keyText = keyToString(key);
     const metaKey = datastore.key([metaKind, keyText]);
 
-    const distributedCounterKey = datastore.key([distributedCounterKind, `${keyText}.${wrapedGetDistributionKey(key)}`]);
+    const distributedCounterKey = datastore.key([
+      distributedCounterKind,
+      `${keyText}.${wrapedGetDistributionKey(key)}`,
+    ]);
 
     const needsCreateTask = await runInTransaction(async (transaction) => {
-      const [[distributedCounter], [meta]]: [[Nullable<DistributedCounter>], [Nullable<Meta>]] = await Promise.all([
+      const [[distributedCounter], [meta]]: [
+        [Nullable<DistributedCounter>],
+        [Nullable<Meta>]
+      ] = await Promise.all([
         transaction.get(distributedCounterKey),
         transaction.get(metaKey),
       ]);
-      const updatedDistributedCounter = distributedCounter ?? { properties: {}, key: keyText };
+      const updatedDistributedCounter = distributedCounter ?? {
+        properties: {},
+        key: keyText,
+      };
 
       switch (behaviorInEntityDoseNotExist.type) {
         case "INITIALIZE":
-          updatedDistributedCounter.initial = behaviorInEntityDoseNotExist.properties();
+          updatedDistributedCounter.initial =
+            behaviorInEntityDoseNotExist.properties();
           break;
         case "IGNORE":
           updatedDistributedCounter.isIgnoreIfNoEntity = true;
           break;
       }
 
-      updatedDistributedCounter.properties[property] = (updatedDistributedCounter.properties[property] ?? 0) + number;
+      updatedDistributedCounter.properties[property] =
+        (updatedDistributedCounter.properties[property] ?? 0) + number;
 
-      const entity = { key: distributedCounterKey, data: updatedDistributedCounter, excludeFromIndexes: ["properties"] };
+      const entity = {
+        key: distributedCounterKey,
+        data: updatedDistributedCounter,
+        excludeFromIndexes: ["properties"],
+      };
       transaction.upsert(entity);
 
-      if (meta == undefined || meta.scheduleTime < scheduleTime - marginDuration) {
+      if (
+        meta == undefined ||
+        meta.scheduleTime < scheduleTime - marginDuration
+      ) {
         const data: Meta = { scheduleTime };
         transaction.upsert({ key: metaKey, data });
 

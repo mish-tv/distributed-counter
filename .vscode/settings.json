@@ -1,18 +1,18 @@
 {
-
   // ---------------------------------------------------------------------------------------------------------------------------
-  // エディタ
+  // editor
   // ---------------------------------------------------------------------------------------------------------------------------
   "editor.tabCompletion": "on",
   "editor.rulers": [128],
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true,
-    "source.fixAll.stylelint": true
-  },
-
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": [
+    "source.fixAll.eslint",
+    "source.fixAll.stylelint"
+  ],
 
   // ---------------------------------------------------------------------------------------------------------------------------
-  // ファイル
+  // files
   // ---------------------------------------------------------------------------------------------------------------------------
   "files.exclude": {
     "**/node_modules": true,
@@ -31,9 +31,8 @@
   },
   "search.followSymlinks": true,
 
-
   // ---------------------------------------------------------------------------------------------------------------------------
-  // エクステンション
+  // extensions
   // ---------------------------------------------------------------------------------------------------------------------------
   "eslint.validate": [
     "javascript",
@@ -41,18 +40,11 @@
     "typescript",
     "typescriptreact"
   ],
-  "stylelint.validate": ["css"],
-  "svg.preview.background": "transparent",
-
+  "eslint.options": { "overrideConfigFile": ".eslintrc.vscode.jsonc" },
 
   // ---------------------------------------------------------------------------------------------------------------------------
-  // 言語
+  // languages
   // ---------------------------------------------------------------------------------------------------------------------------
   "typescript.tsdk": "./node_modules/typescript/lib",
-  "typescript.suggest.autoImports": false,
-
-  "css.validate": false,
-  "less.validate": false,
-  "scss.validate": false
-
+  "typescript.suggest.autoImports": false
 }

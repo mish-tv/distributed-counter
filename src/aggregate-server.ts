@@ -7,17 +7,22 @@ import { createAggregator, isExcludeFromIndexes } from "./aggregator";
 const datastore = new Datastore();
 const distributedCounterKind = process.env["DISTRIBUTED_COUNTER_KIND"];
 const excludeFromIndexes = (() => {
-  const excludeFromIndexesJSON = process.env["DISTRIBUTED_COUNTER_EXCLUDE_FROM_INDEXES"];
+  const excludeFromIndexesJSON =
+    process.env["DISTRIBUTED_COUNTER_EXCLUDE_FROM_INDEXES"];
   if (excludeFromIndexesJSON == undefined) return {};
   const excludeFromIndexes = JSON.parse(excludeFromIndexesJSON);
   if (!isExcludeFromIndexes(excludeFromIndexes)) {
-    throw new Error(`illegal DISTRIBUTED_COUNTER_EXCLUDE_FROM_INDEXES: ${excludeFromIndexesJSON}`);
+    throw new Error(
+      `illegal DISTRIBUTED_COUNTER_EXCLUDE_FROM_INDEXES: ${excludeFromIndexesJSON}`
+    );
   }
 
   return excludeFromIndexes;
 })();
 
-const aggregate = createAggregator(distributedCounterKind, excludeFromIndexes, { datastore });
+const aggregate = createAggregator(distributedCounterKind, excludeFromIndexes, {
+  datastore,
+});
 
 const listener: RequestListener = (req, res) => {
   const buffer: Uint8Array[] = [];
@@ -30,6 +35,7 @@ const listener: RequestListener = (req, res) => {
     .on("data", (chunk) => {
       buffer.push(chunk);
     })
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     .on("end", async () => {
       try {
         const { key } = JSON.parse(Buffer.concat(buffer).toString());

@@ -24,7 +24,9 @@ export const createMocks = () => {
   const tasksMock = {
     queuePath: jest
       .fn()
-      .mockImplementation((project, location, queue) => new CloudTasksClient().queuePath(project, location, queue)),
+      .mockImplementation((project, location, queue) =>
+        new CloudTasksClient().queuePath(project, location, queue)
+      ),
     createTask: jest.fn(),
   };
 

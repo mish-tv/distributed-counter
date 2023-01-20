@@ -1,5 +1,13 @@
 steps:
-- name: "gcr.io/cloud-builders/docker"
-  args: [ "build", "-t", "us-east4-docker.pkg.dev/$PROJECT_ID/distributed-counter/aggregate-server:${_TAG}", "-f", "./container/debug/Dockerfile", "." ]
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "us-east4-docker.pkg.dev/$PROJECT_ID/distributed-counter/aggregate-server:${_TAG}",
+        "-f",
+        "./container/debug/Dockerfile",
+        ".",
+      ]
 images:
-- "us-east4-docker.pkg.dev/$PROJECT_ID/distributed-counter/aggregate-server:${_TAG}"
+  - "us-east4-docker.pkg.dev/$PROJECT_ID/distributed-counter/aggregate-server:${_TAG}"

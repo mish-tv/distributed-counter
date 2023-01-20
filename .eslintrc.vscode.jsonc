@@ -1,0 +1,10 @@
+{
+  "extends": ["./.eslintrc.json"],
+  "parserOptions": { "project": null },
+  "rules": {
+    "@typescript-eslint/await-thenable": "off",
+    "@typescript-eslint/no-floating-promises": "off",
+    "@typescript-eslint/no-misused-promises": "off",
+    "@typescript-eslint/switch-exhaustiveness-check": "off"
+  }
+}

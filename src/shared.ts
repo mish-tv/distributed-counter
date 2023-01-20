@@ -1,10 +1,16 @@
 import { Datastore, Key, Transaction } from "@google-cloud/datastore";
 import { createHash } from "crypto";
 
+import { Promisable } from "./types";
+
 const retry = 5;
 type ConflictError = { code: 10 };
-const isConflictError = (error: any): error is ConflictError => error.code === 10;
-export const runInTransaction = async <T>(handler: (transaction: Transaction) => Promisable<T>, datastore: Datastore) => {
+const isConflictError = (error: any): error is ConflictError =>
+  error.code === 10;
+export const runInTransaction = async <T>(
+  handler: (transaction: Transaction) => Promisable<T>,
+  datastore: Datastore
+) => {
   let err: any;
 
   for (let i = 0; i < retry; i++) {

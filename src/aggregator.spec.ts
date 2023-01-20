@@ -16,7 +16,12 @@ describe("aggregate", () => {
 
     mocks.datastoreMock.transactionMock.get.mockResolvedValue([undefined]);
     mocks.datastoreMock.queryMock.run.mockReturnValue([
-      [{ properties: { x: 1 } }, { properties: { y: 2 } }, { properties: { z: 4 } }, { properties: { x: 8, y: 16 } }],
+      [
+        { properties: { x: 1 } },
+        { properties: { y: 2 } },
+        { properties: { z: 4 } },
+        { properties: { x: 8, y: 16 } },
+      ],
     ]);
   });
 
@@ -24,7 +29,10 @@ describe("aggregate", () => {
     await aggregate(key);
 
     expect(mocks.datastoreMock.createQuery).toBeCalledWith("Distributed");
-    expect(mocks.datastoreMock.queryMock.filter).toBeCalledWith("key", "Counter.dummy-id");
+    expect(mocks.datastoreMock.queryMock.filter).toBeCalledWith(
+      "key",
+      "Counter.dummy-id"
+    );
     expect(mocks.datastoreMock.transactionMock.get).toBeCalledWith(key);
     expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
       key,
@@ -35,7 +43,9 @@ describe("aggregate", () => {
 
   context("If the actual entity already exists", () => {
     beforeEach(() => {
-      mocks.datastoreMock.transactionMock.get.mockResolvedValue([{ foo: "bar", x: 10000 }]);
+      mocks.datastoreMock.transactionMock.get.mockResolvedValue([
+        { foo: "bar", x: 10000 },
+      ]);
     });
 
     it("reflects the value in the actual entity.", async () => {
@@ -65,7 +75,9 @@ describe("aggregate", () => {
 
   context("If no changes were made to the properties", () => {
     beforeEach(() => {
-      mocks.datastoreMock.transactionMock.get.mockResolvedValue([{ foo: "bar", x: 9, y: 18, z: 4 }]);
+      mocks.datastoreMock.transactionMock.get.mockResolvedValue([
+        { foo: "bar", x: 9, y: 18, z: 4 },
+      ]);
     });
 
     it("does not do upsert", async () => {
@@ -100,7 +112,9 @@ describe("aggregate", () => {
 
     context("If the actual entity already exists", () => {
       beforeEach(() => {
-        mocks.datastoreMock.transactionMock.get.mockResolvedValue([{ bar: "baz", x: 10000 }]);
+        mocks.datastoreMock.transactionMock.get.mockResolvedValue([
+          { bar: "baz", x: 10000 },
+        ]);
       });
 
       it("doesn't use the initial.", async () => {
@@ -135,7 +149,9 @@ describe("aggregate", () => {
 
     context("If the actual entity already exists", () => {
       beforeEach(() => {
-        mocks.datastoreMock.transactionMock.get.mockResolvedValue([{ bar: "baz", x: 10000 }]);
+        mocks.datastoreMock.transactionMock.get.mockResolvedValue([
+          { bar: "baz", x: 10000 },
+        ]);
       });
 
       it("update the entity.", async () => {
@@ -152,7 +168,11 @@ describe("aggregate", () => {
 
   context("If a value is specified for excludeFromIndexes", () => {
     beforeEach(() => {
-      aggregate = createAggregator("Distributed", { baz: ["a"], [key.kind]: ["foo", "bar"] }, mocks);
+      aggregate = createAggregator(
+        "Distributed",
+        { baz: ["a"], [key.kind]: ["foo", "bar"] },
+        mocks
+      );
     });
 
     it("reflects it in the subject kind.", async () => {

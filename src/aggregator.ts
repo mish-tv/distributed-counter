@@ -1,5 +1,6 @@
 import { Datastore, Key } from "@google-cloud/datastore";
 
+import { Nullable } from "./types";
 import { DistributedCounter, keyToString, runInTransaction } from "./shared";
 
 type Dependencies = {
@@ -10,7 +11,9 @@ type ExcludeFromIndexes = { [K in string]?: string[] };
 const defaultDependencies = (): Dependencies => ({
   datastore: new Datastore(),
 });
-export const isExcludeFromIndexes = (excludeFromIndexes: any): excludeFromIndexes is ExcludeFromIndexes => {
+export const isExcludeFromIndexes = (
+  excludeFromIndexes: any
+): excludeFromIndexes is ExcludeFromIndexes => {
   if (typeof excludeFromIndexes !== "object") return false;
   for (const [key, values] of Object.entries(excludeFromIndexes)) {
     if (typeof key !== "string") return false;
@@ -26,7 +29,7 @@ export const isExcludeFromIndexes = (excludeFromIndexes: any): excludeFromIndexe
 export const createAggregator = (
   distributedCounterKind = "distributed_counter",
   excludeFromIndexes: ExcludeFromIndexes = {},
-  dependencies: Dependencies = defaultDependencies(),
+  dependencies: Dependencies = defaultDependencies()
 ) => {
   const { datastore } = dependencies;
 
@@ -41,7 +44,11 @@ export const createAggregator = (
     let initial: Nullable<Record<string, any>> = undefined;
     let isIgnoreIfNoEntity = false;
 
-    for (const { properties, initial: tmpInitial, isIgnoreIfNoEntity: tmpIsIgnoreIfNoEntity } of distributedCounters) {
+    for (const {
+      properties,
+      initial: tmpInitial,
+      isIgnoreIfNoEntity: tmpIsIgnoreIfNoEntity,
+    } of distributedCounters) {
       initial ??= tmpInitial;
       if (tmpIsIgnoreIfNoEntity) isIgnoreIfNoEntity = true;
       for (const [key, value] of Object.entries(properties)) {
@@ -63,7 +70,12 @@ export const createAggregator = (
         updatedEntity[key] = value;
       }
 
-      if (hasChange) transaction.upsert({ key, data: updatedEntity, excludeFromIndexes: excludeFromIndexes[key.kind] ?? [] });
+      if (hasChange)
+        transaction.upsert({
+          key,
+          data: updatedEntity,
+          excludeFromIndexes: excludeFromIndexes[key.kind] ?? [],
+        });
     }, datastore);
   };
 };

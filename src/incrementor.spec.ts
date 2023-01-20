@@ -16,12 +16,17 @@ describe("increment", () => {
     increment = createIncrementor(
       url,
       "sa@example.com",
-      (key, client) => client.queuePath(projectId, location, `distributed-counter-${key.kind}`),
+      (key, client) =>
+        client.queuePath(
+          projectId,
+          location,
+          `distributed-counter-${key.kind}`
+        ),
       1000,
       10_000,
       "Distributed",
       "Meta",
-      mocks,
+      mocks
     );
 
     jest.spyOn(Date, "now").mockReturnValue(now);
@@ -33,10 +38,13 @@ describe("increment", () => {
     await increment(key, "dummyValue", 2);
 
     expect(mocks.datastoreMock.transactionMock.get).toBeCalledWith(
-      expect.objectContaining({ kind: "Distributed", name: expect.stringMatching(/^Counter\.dummy-id\.[0-9a-f]{8}$/) }),
+      expect.objectContaining({
+        kind: "Distributed",
+        name: expect.stringMatching(/^Counter\.dummy-id\.[0-9a-f]{8}$/),
+      })
     );
     expect(mocks.datastoreMock.transactionMock.get).toBeCalledWith(
-      expect.objectContaining({ kind: "Meta", name: "Counter.dummy-id" }),
+      expect.objectContaining({ kind: "Meta", name: "Counter.dummy-id" })
     );
     expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
       data: {
@@ -55,7 +63,8 @@ describe("increment", () => {
       key: expect.objectContaining({ kind: "Meta", name: "Counter.dummy-id" }),
     });
     expect(mocks.tasksMock.createTask).toBeCalledWith({
-      parent: "projects/dummy-project-id/locations/us-east4/queues/distributed-counter-Counter",
+      parent:
+        "projects/dummy-project-id/locations/us-east4/queues/distributed-counter-Counter",
       task: {
         httpRequest: {
           body: Buffer.from('{"key":{"path":["Counter","dummy-id"]}}'),
@@ -64,7 +73,7 @@ describe("increment", () => {
           oidcToken: { serviceAccountEmail: "sa@example.com" },
         },
         name: expect.stringMatching(
-          /^projects\/dummy-project-id\/locations\/us-east4\/queues\/distributed-counter-Counter\/tasks\/[0-9a-f-]{36}$/,
+          /^projects\/dummy-project-id\/locations\/us-east4\/queues\/distributed-counter-Counter\/tasks\/[0-9a-f-]{36}$/
         ),
         scheduleTime: { seconds: now / 1000 + 10 },
       },
@@ -72,45 +81,59 @@ describe("increment", () => {
   });
 
   it("works properly when keys containing namespace and id are specified.", async () => {
-    const key = mocks.datastore.key({ path: ["Counter", 123], namespace: "dummy-namespace" });
+    const key = mocks.datastore.key({
+      path: ["Counter", 123],
+      namespace: "dummy-namespace",
+    });
     await increment(key, "dummyValue", 2);
 
     expect(mocks.datastoreMock.transactionMock.get).toBeCalledWith(
       expect.objectContaining({
-        name: expect.stringMatching(/^dummy-namespace\.Counter\.123\.[0-9a-f]{8}$/),
-      }),
+        name: expect.stringMatching(
+          /^dummy-namespace\.Counter\.123\.[0-9a-f]{8}$/
+        ),
+      })
     );
     expect(mocks.datastoreMock.transactionMock.get).toBeCalledWith(
-      expect.objectContaining({ name: "dummy-namespace.Counter.123" }),
+      expect.objectContaining({ name: "dummy-namespace.Counter.123" })
     );
     expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ key: "dummy-namespace.Counter.123" }),
         key: expect.objectContaining({
-          name: expect.stringMatching(/^dummy-namespace\.Counter\.123\.[0-9a-f]{8}$/),
+          name: expect.stringMatching(
+            /^dummy-namespace\.Counter\.123\.[0-9a-f]{8}$/
+          ),
         }),
-      }),
+      })
     );
     expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith(
-      expect.objectContaining({ key: expect.objectContaining({ kind: "Meta", name: "dummy-namespace.Counter.123" }) }),
+      expect.objectContaining({
+        key: expect.objectContaining({
+          kind: "Meta",
+          name: "dummy-namespace.Counter.123",
+        }),
+      })
     );
     expect(mocks.tasksMock.createTask).toBeCalledWith(
       expect.objectContaining({
         task: expect.objectContaining({
           httpRequest: expect.objectContaining({
             body: Buffer.from(
-              '{"key":{"namespace":"dummy-namespace","path":["Counter",{"type":"DatastoreInt","value":"123"}]}}',
+              '{"key":{"namespace":"dummy-namespace","path":["Counter",{"type":"DatastoreInt","value":"123"}]}}'
             ),
           }),
         }),
-      }),
+      })
     );
   });
 
   context("If a distributed counter already exists", () => {
     beforeEach(() => {
       mocks.datastoreMock.transactionMock.get.mockImplementation((key) =>
-        key.kind === "Distributed" ? [{ properties: { dummyValue: 101, dummy2: "foo" } }] : [undefined],
+        key.kind === "Distributed"
+          ? [{ properties: { dummyValue: 101, dummy2: "foo" } }]
+          : [undefined]
       );
     });
 
@@ -132,35 +155,40 @@ describe("increment", () => {
     });
   });
 
-  context("If a distributed counter already exists, but the property does not exist", () => {
-    beforeEach(() => {
-      mocks.datastoreMock.transactionMock.get.mockImplementation((key) =>
-        key.kind === "Distributed" ? [{ properties: { dummy2: "foo" } }] : [undefined],
-      );
-    });
-
-    it("adds properties to the distributed counter and stores it.", async () => {
-      const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
-      await increment(key, "dummyValue", 3);
-
-      expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
-        data: {
-          properties: { dummyValue: 3, dummy2: "foo" },
-          initial: {},
-        },
-        excludeFromIndexes: ["properties"],
-        key: expect.objectContaining({
-          kind: "Distributed",
-          name: expect.stringMatching(/^Counter\.dummy-id\.[0-9a-f]{8}$/),
-        }),
+  context(
+    "If a distributed counter already exists, but the property does not exist",
+    () => {
+      beforeEach(() => {
+        mocks.datastoreMock.transactionMock.get.mockImplementation((key) =>
+          key.kind === "Distributed"
+            ? [{ properties: { dummy2: "foo" } }]
+            : [undefined]
+        );
       });
-    });
-  });
+
+      it("adds properties to the distributed counter and stores it.", async () => {
+        const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
+        await increment(key, "dummyValue", 3);
+
+        expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
+          data: {
+            properties: { dummyValue: 3, dummy2: "foo" },
+            initial: {},
+          },
+          excludeFromIndexes: ["properties"],
+          key: expect.objectContaining({
+            kind: "Distributed",
+            name: expect.stringMatching(/^Counter\.dummy-id\.[0-9a-f]{8}$/),
+          }),
+        });
+      });
+    }
+  );
 
   context("If the aggregate has already been reserved", () => {
     beforeEach(() => {
       mocks.datastoreMock.transactionMock.get.mockImplementation((key) =>
-        key.kind === "Meta" ? [{ scheduleTime: now + 5000 }] : [undefined],
+        key.kind === "Meta" ? [{ scheduleTime: now + 5000 }] : [undefined]
       );
     });
 
@@ -175,7 +203,7 @@ describe("increment", () => {
             kind: "Distributed",
             name: expect.stringMatching(/^Counter\.dummy-id\.[0-9a-f]{8}$/),
           }),
-        }),
+        })
       );
       expect(mocks.tasksMock.createTask).not.toBeCalled();
     });
@@ -184,7 +212,7 @@ describe("increment", () => {
   context("If the aggregate is reserved but will be executed soon", () => {
     beforeEach(() => {
       mocks.datastoreMock.transactionMock.get.mockImplementation((key) =>
-        key.kind === "Meta" ? [{ scheduleTime: now + 4999 }] : [undefined],
+        key.kind === "Meta" ? [{ scheduleTime: now + 4999 }] : [undefined]
       );
     });
 
@@ -199,7 +227,9 @@ describe("increment", () => {
 
   context("If commit throws a conflicts error only once", () => {
     beforeEach(() => {
-      mocks.datastoreMock.transactionMock.commit.mockRejectedValueOnce(new ConflictError());
+      mocks.datastoreMock.transactionMock.commit.mockRejectedValueOnce(
+        new ConflictError()
+      );
     });
 
     it("re-runs the process.", async () => {
@@ -215,7 +245,10 @@ describe("increment", () => {
   context("If a initial is specified", () => {
     it("sets a initial for the distributed counter.", async () => {
       const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
-      await increment(key, "dummyValue", 2, { type: "INITIALIZE", properties: () => ({ x: "foo", y: "bar" }) });
+      await increment(key, "dummyValue", 2, {
+        type: "INITIALIZE",
+        properties: () => ({ x: "foo", y: "bar" }),
+      });
 
       expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
         data: {
@@ -235,14 +268,22 @@ describe("increment", () => {
       beforeEach(() => {
         mocks.datastoreMock.transactionMock.get.mockImplementation((key) =>
           key.kind === "Distributed"
-            ? [{ properties: { dummyValue: 101, dummy2: "foo" }, initial: { z: "baz" } }]
-            : [undefined],
+            ? [
+                {
+                  properties: { dummyValue: 101, dummy2: "foo" },
+                  initial: { z: "baz" },
+                },
+              ]
+            : [undefined]
         );
       });
 
       it("overwrite the initial.", async () => {
         const key = mocks.datastore.key({ path: ["Counter", "dummy-id"] });
-        await increment(key, "dummyValue", 1, { type: "INITIALIZE", properties: () => ({ x: "foo", y: "bar" }) });
+        await increment(key, "dummyValue", 1, {
+          type: "INITIALIZE",
+          properties: () => ({ x: "foo", y: "bar" }),
+        });
 
         expect(mocks.datastoreMock.transactionMock.upsert).toBeCalledWith({
           data: {
@@ -281,7 +322,9 @@ describe("increment", () => {
     context("If a distributed counter already exists", () => {
       beforeEach(() => {
         mocks.datastoreMock.transactionMock.get.mockImplementation((key) =>
-          key.kind === "Distributed" ? [{ properties: { dummyValue: 101, dummy2: "foo" } }] : [undefined],
+          key.kind === "Distributed"
+            ? [{ properties: { dummyValue: 101, dummy2: "foo" } }]
+            : [undefined]
         );
       });
 

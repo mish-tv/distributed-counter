@@ -2,7 +2,7 @@ import { ConflictError, createMocks } from "./tests";
 import { createHashKeys, runInTransaction } from "./shared";
 
 describe("createHashKeys", () => {
-  it("returns a fixed string of 1000 characters.", async () => {
+  it("returns a fixed string of 1000 characters.", () => {
     const hashKeys = createHashKeys();
     expect(new Set(hashKeys).size).toBe(1000);
     expect(hashKeys.length).toBe(1000);
@@ -33,7 +33,7 @@ describe("runInTransaction", () => {
     await expect(() =>
       runInTransaction(() => {
         throw new Error("dummy");
-      }, mocks.datastore),
+      }, mocks.datastore)
     ).rejects.toThrow("dummy");
     expect(mocks.datastoreMock.transactionMock.run).toBeCalledTimes(1);
     expect(mocks.datastoreMock.transactionMock.rollback).toBeCalledTimes(1);
@@ -42,7 +42,9 @@ describe("runInTransaction", () => {
 
   context("If commit throws a conflicts error only once", () => {
     beforeEach(() => {
-      mocks.datastoreMock.transactionMock.commit.mockRejectedValueOnce(new ConflictError());
+      mocks.datastoreMock.transactionMock.commit.mockRejectedValueOnce(
+        new ConflictError()
+      );
     });
 
     it("recreates a transaction and re-execute the anonymous function.", async () => {
@@ -60,7 +62,9 @@ describe("runInTransaction", () => {
 
   context("If commit always throws a conflict error", () => {
     beforeEach(() => {
-      mocks.datastoreMock.transactionMock.commit.mockRejectedValue(new ConflictError());
+      mocks.datastoreMock.transactionMock.commit.mockRejectedValue(
+        new ConflictError()
+      );
     });
 
     it("throws an exception after re-running 5 times.", async () => {
@@ -69,7 +73,7 @@ describe("runInTransaction", () => {
       await expect(() =>
         runInTransaction(() => {
           i += 1;
-        }, mocks.datastore),
+        }, mocks.datastore)
       ).rejects.toThrow("dummy conflict error");
       expect(i).toBe(5);
       expect(mocks.datastoreMock.transaction).toBeCalledTimes(5);
@@ -81,7 +85,9 @@ describe("runInTransaction", () => {
 
   context("If commit throws a non-conflict error", () => {
     beforeEach(() => {
-      mocks.datastoreMock.transactionMock.commit.mockRejectedValue(new Error("dummy error"));
+      mocks.datastoreMock.transactionMock.commit.mockRejectedValue(
+        new Error("dummy error")
+      );
     });
 
     it("will throw an exception soon.", async () => {
@@ -90,7 +96,7 @@ describe("runInTransaction", () => {
       await expect(() =>
         runInTransaction(() => {
           i += 1;
-        }, mocks.datastore),
+        }, mocks.datastore)
       ).rejects.toThrow("dummy error");
       expect(i).toBe(1);
       expect(mocks.datastoreMock.transaction).toBeCalledTimes(1);
