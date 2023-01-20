@@ -2,7 +2,7 @@ set -eu
 
 npm run build
 
-TAG="v1.0.0"
+TAG="v1.1.0"
 
 gcloud config configurations activate mish-tv
 

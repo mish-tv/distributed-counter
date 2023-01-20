@@ -9,21 +9,24 @@
 
 <h4 align="center">`@mish-tv/distributed-counter is a library for creating distributed counters using CloudDatastore, CloudTasks, and CloudRun.</h4>
 
-
 ## Installation
+
 ```
 npm install --save @mish-tv/distributed-counter
 ```
 
 ## Usage
+
 ### Preparation
+
 - Enable Datastore / CloudRun / CloudTasks.
 - Create a Queue with an arbitrary name in CloudTasks.
-In the following example, you will need a queue named distributed-counter-counter.
+  In the following example, you will need a queue named distributed-counter-counter.
 - Create a service account to run CloudRun from CloudTasks.
-Please refer to [this document](https://cloud.google.com/tasks/docs/creating-http-target-tasks#sa).
+  Please refer to [this document](https://cloud.google.com/tasks/docs/creating-http-target-tasks#sa).
 
 ### Deploy aggregate server
+
 Deploy a server application to CloudRun.
 You can use the [image](https://hub.docker.com/repository/docker/malt03/aggregate-server) I have created.
 
@@ -31,7 +34,7 @@ The deployment to CloudRun is complete, note the URL to request.
 Apply the URL you have note to the constant named url in the following sample code.
 
 ```sh
-TAG=v1.0.0
+TAG=v1.1.0
 REGION=${your_region}
 IMAGE=us-east4-docker.pkg.dev/${YOUR_PROJECT_ID}/distributed-counter/aggregate-server:${TAG}
 
@@ -43,6 +46,7 @@ gcloud run deploy aggregate-distributed-counter --image ${IMAGE} --platform mana
 ```
 
 ### Implementation
+
 ```typescript
 import { Datastore } from "@google-cloud/datastore";
 import { createIncrementor } from "@mish-tv/distributed-counter";
@@ -52,15 +56,16 @@ const projectId = "";
 const location = "us-east4";
 // const url = `https://aggregate-distributed-counter-${dummy}-uk.a.run.app`;
 // const serviceAccount = `cloud-tasks@${projectId}.iam.gserviceaccount.com`;
-const increment = createIncrementor(
-  url,
-  serviceAccount,
-  (key, client) => client.queuePath(projectId, location, `distributed-counter-${key.kind}`),
+const increment = createIncrementor(url, serviceAccount, (key, client) =>
+  client.queuePath(projectId, location, `distributed-counter-${key.kind}`)
 );
 
 export const incrementCounter = async (id: string, value: number) => {
   const key = datastore.key(["counter", id]);
   const initialEntity = { foo: "bar" };
-  await increment(key, "value", value, { type: "INITIALIZE", properties: () => initialEntity });
+  await increment(key, "value", value, {
+    type: "INITIALIZE",
+    properties: () => initialEntity,
+  });
 };
 ```
