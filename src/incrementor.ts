@@ -23,10 +23,10 @@ type Dependencies = {
 type Meta = { scheduleTime: number };
 type Task = tasksProtos.google.cloud.tasks.v2.ITask;
 
-const defaultDependencies = (): Dependencies => ({
+const defaultDependencies: Dependencies = {
   datastore: new Datastore(),
   tasks: new CloudTasksClient(),
-});
+};
 
 const getDistributionKey = (distributionNumber: number) =>
   hashKeys[Math.floor(Math.random() * distributionNumber)];
@@ -47,7 +47,7 @@ export const createIncrementor = (
   delay: Delay = 10_000,
   distributedCounterKind = "distributed_counter",
   metaKind = "distributed_counter_meta",
-  dependencies: Dependencies = defaultDependencies()
+  dependencies: Dependencies = defaultDependencies
 ) => {
   const { datastore, tasks } = dependencies;
   const getQueuePath =
