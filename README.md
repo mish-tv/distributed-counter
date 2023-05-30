@@ -34,7 +34,7 @@ The deployment to CloudRun is complete, note the URL to request.
 Apply the URL you have note to the constant named url in the following sample code.
 
 ```sh
-TAG=v1.1.0
+TAG=v1.2.0
 REGION=${your_region}
 IMAGE=us-east4-docker.pkg.dev/${YOUR_PROJECT_ID}/distributed-counter/aggregate-server:${TAG}
 
